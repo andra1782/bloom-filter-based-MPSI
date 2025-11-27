@@ -73,7 +73,7 @@ void BloomFilter::bitwise_and(const BloomFilter& other) {
 }
 
 size_t BloomFilter::get_size_in_bytes() const {
-    return (bins.size() + 7) / 8;
+    return bins.size(); // TODO: optimize to use a bitset instead of vector<bool>
 }
 
 size_t BloomFilter::get_set_bits_count() const {
