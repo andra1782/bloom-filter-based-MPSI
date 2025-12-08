@@ -38,7 +38,7 @@ ZZ join_encrypted_data(const std::vector<ZZ>& c2_values, const PublicParameters&
 
 ZZ decrypt_share(const ZZ& Y, const ZZ& c1, const ZZ& sk, const PublicParameters& params, long num_parties) {
     // Y / (c1^(sk * t)) mod p
-    ZZ denominator = PowerMod(c1, sk * num_parties, params.p); //TODO: verify num_parties usage
+    ZZ denominator = PowerMod(c1, sk * num_parties, params.p); // TODO: verify num_parties usage
     ZZ denominator_inv = InvMod(denominator, params.p);
     return MulMod(Y, denominator_inv, params.p);
 }

@@ -12,6 +12,8 @@ size_t hash_element(const size_t& element, uint64_t seed) {
     return static_cast<size_t>(hash);
 }
 
+// change m = - (n ln E) / (ln 2)^2
+// k = - ln E / ln 2
 BloomFilterParams::BloomFilterParams(size_t element_count, int64_t e_pow) {
     size_t hash_count = static_cast<size_t>(-e_pow);
     double e_pow_f = static_cast<double>(e_pow);
