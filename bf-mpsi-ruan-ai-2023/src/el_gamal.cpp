@@ -1,14 +1,15 @@
 #include "el_gamal.hpp"
 
 void key_gen(Keys* keys, long key_length, long num_parties) {
-    //TODO: generate p and g
+    keys->params.p = NTL::GenPrime_ZZ(key_length);
+    keys->params.g = NTL::RandomBnd(keys->params.p - 2) + 2; // random in [2, p-1]
 
     keys->key_pairs.clear();
     keys->key_pairs.reserve(num_parties);
 
     for (int i = 0; i < num_parties; ++i) {
         KeyPair kp;
-        kp.sk = //TODO: choose random sk
+        kp.sk = NTL::RandomBnd(keys->params.p - 2) + 2; // random in [2, p-1]
         kp.pk = PowerMod(keys->params.g, kp.sk, keys->params.p);
         keys->key_pairs.push_back(kp);
     }

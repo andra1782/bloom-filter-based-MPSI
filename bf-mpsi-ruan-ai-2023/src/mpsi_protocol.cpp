@@ -23,7 +23,7 @@ std::vector<Ciphertext> initialization(
         if (bf.contains_bit(j)) { 
              message = 1;
         } else {
-             message = // TODO: choose random
+             message = NTL::RandomBnd(params.p - 2) + 2; // random in [2, p-1]
         }
         encrypted_bf.push_back(encrypt(message, pk, params));
     }
@@ -55,20 +55,20 @@ std::vector<size_t> multiparty_psi(
         ));
     }
 
-    // Computation Intersection
-    // Steps 1 & 2 - Server computes combined encrypted BF
+    // Computation Intersection
+    // Steps 1 & 2 - Server computes combined encrypted BF
     std::vector<ZZ> combined_ebf;
     combined_ebf.reserve(m_bits);
 
     for(long j=0; j<m_bits; ++j) {
-        ZZ combined_ct_c2s = 1; 
+        ZZ combined_ct_c2s = ZZ(1); 
         for(size_t i=0; i<num_clients_t; ++i) { 
             combined_ct_c2s = MulMod(combined_ct_c2s, client_ebfs[i][j].c2, keys.params.p);
         }
         combined_ebf.push_back(combined_ct_c2s);
     }
 
-    // Step 3 - Each client computes their decryption share
+    // Step 3 - Each client computes their decryption share
     std::vector<std::vector<ZZ>> all_bin_shares;
     all_bin_shares.reserve(num_clients_t);
 
@@ -82,7 +82,6 @@ std::vector<size_t> multiparty_psi(
     }
 
     // Step 4 - Server computes combined BF
-    BloomFilterParams bf_params(1, -1); // TODO: pass params
     bf_params.bin_count = m_bits;
     bf_params.seeds.clear();
     for(size_t i=0; i<k_hashes; ++i) 
@@ -91,8 +90,8 @@ std::vector<size_t> multiparty_psi(
 
     for(long j=0; j<m_bits; ++j) {
         std::vector<ZZ> shares_for_bin_j;
-        for(size_t i=0; i<num_clients; ++i) {
-            shares_for_bin_j.push_back(all_client_shares[i][j]);
+        for(size_t i=0; i<num_clients_t; ++i) {
+            shares_for_bin_j.push_back(all_bin_shares[i][j]);
         }
 
         ZZ plaintext = combine_decryption_shares(shares_for_bin_j, keys.params);
@@ -101,7 +100,7 @@ std::vector<size_t> multiparty_psi(
         }
     }
 
-    // Step 5 - Server computes intersection
+    // Step 5 - Server computes intersection
     std::vector<size_t> intersection;
     for(size_t elem : server_set) {
         if(final_bf.contains(elem)) {
