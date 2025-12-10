@@ -19,9 +19,9 @@ std::vector<Ciphertext> initialization(
 
     for(size_t j=0; j<m_bits; ++j) {
         ZZ message;
-        // if bit is 1: encrypt(1), else: encrypt(random > 1??)
+        // if bit is 1: encrypt(1), else: encrypt(random > 1)
         if (bf.contains_bit(j)) { 
-             message = 1;
+             message = ZZ(1);
         } else {
              message = NTL::RandomBnd(params.p - 2) + 2; // random in [2, p-1]
         }
@@ -34,12 +34,12 @@ std::vector<Ciphertext> initialization(
 std::vector<size_t> multiparty_psi(
     const std::vector<std::vector<size_t>>& client_sets,
     const std::vector<size_t>& server_set,
-    long m_bits,
-    long k_hashes,
+    BloomFilterParams& bf_params,
     const Keys& keys) 
 {
-    BloomFilterParams bf_params(10, -30);
     size_t num_clients_t = client_sets.size();
+    size_t m_bits = bf_params.bin_count;
+    size_t k_hashes = bf_params.seeds.size();
     
     // Initialization - clients generate encrypted Bloom Filters
     std::vector<std::vector<Ciphertext>> client_ebfs;
@@ -82,18 +82,12 @@ std::vector<size_t> multiparty_psi(
     }
 
     // Step 4 - Server computes combined BF
-    bf_params.bin_count = m_bits;
-    bf_params.seeds.clear();
-    for(size_t i=0; i<k_hashes; ++i) 
-        bf_params.seeds.push_back(i);
-    BloomFilter final_bf(bf_params);
-
+    BloomFilter final_bf(bf_params); 
     for(long j=0; j<m_bits; ++j) {
         std::vector<ZZ> shares_for_bin_j;
         for(size_t i=0; i<num_clients_t; ++i) {
-            shares_for_bin_j.push_back(all_bin_shares[i][j]);
+            shares_for_bin_j.push_back(all_bin_shares[j][i]);
         }
-
         ZZ plaintext = combine_decryption_shares(shares_for_bin_j, keys.params);
         if (plaintext == 1) {
             final_bf.set_bit_manually(j, true); 

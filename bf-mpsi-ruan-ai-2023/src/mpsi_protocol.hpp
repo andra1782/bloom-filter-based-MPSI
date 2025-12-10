@@ -9,8 +9,7 @@
 std::vector<size_t> multiparty_psi(
     const std::vector<std::vector<size_t>>& client_sets,
     const std::vector<size_t>& server_set,
-    long m_bits,
-    long k_hashes,
+    BloomFilterParams& bf_params,
     const Keys& keys
 );
 

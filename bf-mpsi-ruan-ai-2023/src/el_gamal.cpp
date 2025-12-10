@@ -2,7 +2,7 @@
 
 void key_gen(Keys* keys, long key_length, long num_parties) {
     keys->params.p = NTL::GenPrime_ZZ(key_length);
-    keys->params.g = NTL::RandomBnd(keys->params.p - 2) + 2; // random in [2, p-1]
+    keys->params.g = NTL::RandomBnd(keys->params.p); // TODO: g should be a generator
 
     keys->key_pairs.clear();
     keys->key_pairs.reserve(num_parties);
@@ -17,8 +17,7 @@ void key_gen(Keys* keys, long key_length, long num_parties) {
 
 Ciphertext encrypt(ZZ message, const ZZ& pk, const PublicParameters& params) {
     Ciphertext ct;
-    
-    ZZ r = //TODO: generate random r
+    ZZ r = NTL::RandomBnd(params.p);
 
     // y_{i,1} = g^r mod p
     ct.c1 = PowerMod(params.g, r, params.p);
@@ -39,7 +38,7 @@ ZZ join_encrypted_data(const std::vector<ZZ>& c2_values, const PublicParameters&
 
 ZZ decrypt_share(const ZZ& Y, const ZZ& c1, const ZZ& sk, const PublicParameters& params, long num_parties) {
     // Y / (c1^(sk * t)) mod p
-    ZZ denominator = PowerMod(c1, sk * num_parties, params.p); // TODO: verify num_parties usage
+    ZZ denominator = PowerMod(c1, sk * num_parties, params.p); 
     ZZ denominator_inv = InvMod(denominator, params.p);
     return MulMod(Y, denominator_inv, params.p);
 }

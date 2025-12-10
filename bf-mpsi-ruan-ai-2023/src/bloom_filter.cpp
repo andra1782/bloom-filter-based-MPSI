@@ -12,18 +12,18 @@ size_t hash_element(const size_t& element, uint64_t seed) {
     return static_cast<size_t>(hash);
 }
 
-// change m = - (n ln E) / (ln 2)^2
-// k = - ln E / ln 2
 BloomFilterParams::BloomFilterParams(size_t element_count, int64_t e_pow) {
+    // k = - ln(epsilon) / ln(2), since epsilon = 2^e_pow, k = -e_pow
     size_t hash_count = static_cast<size_t>(-e_pow);
-    double e_pow_f = static_cast<double>(e_pow);
-    double hash_count_f = static_cast<double>(hash_count);
-    double element_count_f = static_cast<double>(element_count);
 
-    double funny_looking_thing = std::pow(2.0, e_pow_f / hash_count_f);
-    double bin_count_f = std::ceil(-hash_count_f * (element_count_f + 0.5) / std::log(1.0 - funny_looking_thing)) + 1.0;
+    // m = - (n * ln(epsilon)) / (ln(2)^2)
+    // m = - (n * e_pow * ln(2)) / (ln(2) * ln(2))
+    // m = - (n * e_pow) / ln(2)
+    double ln2 = std::log(2.0);
+    double m_float = -(static_cast<double>(element_count) * static_cast<double>(e_pow)) / ln2;
     
-    this->bin_count = static_cast<size_t>(bin_count_f);
+    this->bin_count = static_cast<size_t>(std::ceil(m_float));
+    
     this->seeds.reserve(hash_count);
     for(size_t i = 0; i < hash_count; ++i) {
         this->seeds.push_back(static_cast<uint64_t>(i));

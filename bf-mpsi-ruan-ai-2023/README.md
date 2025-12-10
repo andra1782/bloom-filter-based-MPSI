@@ -13,5 +13,5 @@ mkdir build
 cd build
 cmake ..
 cmake --build . --config Release
-./bf_mpsi_baseline
+./ruan_mpsi
 ```
