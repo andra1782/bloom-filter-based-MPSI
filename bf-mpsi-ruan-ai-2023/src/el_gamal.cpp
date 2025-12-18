@@ -1,15 +1,38 @@
 #include "el_gamal.hpp"
 
 void key_gen(Keys* keys, long key_length, long num_parties) {
-    keys->params.p = NTL::GenPrime_ZZ(key_length);
-    keys->params.g = NTL::RandomBnd(keys->params.p); // TODO: g should be a generator
+    // Inspired by https://github.com/TNO-MPC/encryption_schemes.elgamal/blob/main/src/tno/mpc/encryption_schemes/elgamal/elgamal_base.py
+    // a safe prime p = 2q + 1 so Z_p^* is a cyclic group of order p-1 
+    // a generator g of this group (g^q mod p != 1  AND  g^2 mod p != 1)
+    // a random value sk in [1, ..., p - 2], used to calculate pk = g^x
+    ZZ p, q, g;
+    while (true) {.
+        GenPrime(q, key_length - 1); 
+        p = 2 * q + 1;
+        if (ProbPrime(p)) {
+            break;
+        }
+    }
+    for (g = 2; g < p - 1; g++) {
+        ZZ check_q, check_2;
+        
+        PowerMod(check_q, g, q, p);
+        if (check_q == 1) continue; 
 
+        PowerMod(check_2, g, 2, p);
+        if (check_2 == 1) continue; 
+
+        break;
+    }
+
+    keys->params.p = p;
+    keys->params.g = g;
     keys->key_pairs.clear();
     keys->key_pairs.reserve(num_parties);
 
     for (int i = 0; i < num_parties; ++i) {
         KeyPair kp;
-        kp.sk = NTL::RandomBnd(keys->params.p - 2) + 2; // random in [2, p-1]
+        kp.sk = NTL::RandomBnd(keys->params.p - 2) + 1; // random in [1, p-2]
         kp.pk = PowerMod(keys->params.g, kp.sk, keys->params.p);
         keys->key_pairs.push_back(kp);
     }
@@ -17,7 +40,7 @@ void key_gen(Keys* keys, long key_length, long num_parties) {
 
 Ciphertext encrypt(ZZ message, const ZZ& pk, const PublicParameters& params) {
     Ciphertext ct;
-    ZZ r = NTL::RandomBnd(params.p);
+    ZZ r = NTL::RandomBnd(params.p - 1) + 1; // random in [1, p-1]
 
     // y_{i,1} = g^r mod p
     ct.c1 = PowerMod(params.g, r, params.p);
