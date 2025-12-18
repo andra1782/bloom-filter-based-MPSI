@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <random>
 #include "mpsi_protocol.hpp"
+#include "benchmarking.hpp"
 
 void print_set(const std::string& name, const std::vector<size_t>& set) {
     std::cout << name << ": { ";
@@ -50,7 +51,8 @@ std::vector<size_t> run_experiment(const std::vector<std::vector<size_t>>& clien
 
     size_t max_set_size = server_set.size();
     for(const auto& set : client_sets) {
-        if(set.size() > max_set_size) max_set_size = set.size();
+        if(set.size() > max_set_size) 
+            max_set_size = set.size();
     }
 
     BloomFilterParams global_params(max_set_size, -30);
@@ -139,7 +141,11 @@ int main() {
         {5, 12, 100, 200} // Server
     );
 
-    run_random_experiment_and_compare(10, 400, 500);
+    run_random_experiment_and_compare(10, 40, 50);
+
+    std::cout << "\nRunning benchmarks: ";
+    // 2, 5 and 10 parties, set sizes 2^4, 2^6 and 2^8
+    benchmark({2, 5, 10}, {4, 6, 8});
 
     return 0;
 }

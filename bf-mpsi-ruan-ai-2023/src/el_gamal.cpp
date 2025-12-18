@@ -5,28 +5,23 @@ void key_gen(Keys* keys, long key_length, long num_parties) {
     // a safe prime p = 2q + 1 so Z_p^* is a cyclic group of order p-1 
     // a generator g of this group (g^q mod p != 1  AND  g^2 mod p != 1)
     // a random value sk in [1, ..., p - 2], used to calculate pk = g^x
-    ZZ p, q, g;
-    while (true) {.
-        GenPrime(q, key_length - 1); 
-        p = 2 * q + 1;
-        if (ProbPrime(p)) {
-            break;
-        }
-    }
-    for (g = 2; g < p - 1; g++) {
-        ZZ check_q, check_2;
-        
-        PowerMod(check_q, g, q, p);
-        if (check_q == 1) continue; 
+    ZZ q, g;
+    GenGermainPrime(q, key_length - 1);
+    keys->params.p = 2 * q + 1;
 
-        PowerMod(check_2, g, 2, p);
+    for (g = 2; g < keys->params.p - 1; g++) {
+        ZZ check_q, check_2;
+
+        PowerMod(check_q, g, q, keys->params.p);
+        if (check_q == 1) continue;
+
+        PowerMod(check_2, g, 2, keys->params.p);
         if (check_2 == 1) continue; 
 
         break;
     }
-
-    keys->params.p = p;
     keys->params.g = g;
+
     keys->key_pairs.clear();
     keys->key_pairs.reserve(num_parties);
 
