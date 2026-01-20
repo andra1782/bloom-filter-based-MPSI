@@ -3,6 +3,11 @@
 
 #include <vector>
 
-void benchmark(std::vector<long> parties_list, std::vector<long> set_size_exponents);
+void benchmark(
+    long repetitions, 
+    std::vector<long> parties_list, 
+    long set_size, 
+    long domain_size
+);
 
 #endif

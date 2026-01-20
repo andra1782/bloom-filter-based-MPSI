@@ -32,12 +32,10 @@ int main() {
         {5, 12, 100, 200} // Server
     );
 
-    run_random_experiment_and_compare(10, 40, 50);
-
-    std::cout << "\nRunning benchmarks: ";
     // 2, 5 and 10 parties, set sizes 2^4, 2^6 and 2^8
-    //benchmark({2, 5, 10}, {4, 6, 8});
-    benchmark({10}, {8});
+    benchmark(10, {2, 5, 10}, 16, 32);
+    benchmark(10, {2, 5, 10}, 64, 128);
+    benchmark(10, {2, 5, 10}, 256, 512);
 
     return 0;
 }

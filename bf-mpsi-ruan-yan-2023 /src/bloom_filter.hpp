@@ -14,8 +14,8 @@ struct BloomFilterParams {
 };
 
 struct BloomFilter {
-    std::vector<bool> bins; 
-    std::vector<uint64_t> seeds;
+    std::vector<bool> bins;  // m bins
+    std::vector<uint64_t> seeds; // k hash functions
 
     explicit BloomFilter(const BloomFilterParams& params);
 

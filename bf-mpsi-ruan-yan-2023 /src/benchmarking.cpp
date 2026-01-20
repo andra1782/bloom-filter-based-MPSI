@@ -53,83 +53,77 @@ double sample_std(const std::vector<long>& measurements, double mean) {
     return std::sqrt(sum / (measurements.size() - 1.0));
 }
 
-void benchmark(std::vector<long> number_of_parties_list, std::vector<long> set_size_exponents) {
-    long universe_size = 256; 
+void generate_clients_and_server_sets(
+    long n_clients,
+    size_t set_size,
+    long universe_size,
+    std::vector<std::vector<long>>& client_sets,
+    std::vector<long>& server_set
+) {
+    client_sets.clear();
+    for (long i = 0; i < n_clients; ++i) {
+        std::vector<long> client_set = sample_set(set_size, universe_size);
+        std::sort(client_set.begin(), client_set.end());
+        client_sets.push_back(client_set);
+    }
 
+    server_set.clear();
+    server_set = sample_set(set_size, universe_size);
+    std::sort(server_set.begin(), server_set.end());
+}
+
+void benchmark(long repetitions, std::vector<long> number_of_parties_list, long set_size, long domain_size) {
     for (long t : number_of_parties_list) {
-        std::cout << "\nBenchmarking " << t << " parties" << std::endl;
-        std::cout << "Format: (Mean Time ms, Std Dev ms)" << std::endl;
-        
-        for (long exp : set_size_exponents) {
-            std::cout << "Results for set size 2^" << exp << ": ";
-            size_t set_size = (1 << exp); 
-            
-            std::vector<std::vector<std::vector<long>>> experiment_client_sets;
-            std::vector<std::vector<long>> experiment_server_sets;
+        std::cout << "\nBenchmarking " << t << " parties";
+        std::cout << ", set size " << set_size;
+        std::cout << ", format: (Mean Time ms, Std Dev ms)" << ": " << std::endl;
 
-            // Generate data for 10 trials
-            for (int i = 0; i < 10; ++i) {
-                std::vector<std::vector<long>> client_sets;
-                // t = #parties, so num_clients = t - 1
-                for (int j = 0; j < t - 1; ++j) {
-                    std::vector<long> set;
-                    set.reserve(set_size);
-                    for (size_t k = 0; k < set_size; ++k) set.push_back(rand() % universe_size);
-                    std::sort(set.begin(), set.end());
-                    set.erase(std::unique(set.begin(), set.end()), set.end());
-                    client_sets.push_back(set);
-                }
-                experiment_client_sets.push_back(client_sets);
-
-                std::vector<long> s_set;
-                s_set.reserve(set_size);
-                for (size_t k = 0; k < set_size; ++k) s_set.push_back(rand() % universe_size);
-                std::sort(s_set.begin(), s_set.end());
-                s_set.erase(std::unique(s_set.begin(), s_set.end()), s_set.end());
-                experiment_server_sets.push_back(s_set);
-            }
-
-            BloomFilterParams params(set_size, -30);
-            Keys keys;
-            // threshold t, parties n = t.
-            key_gen(&keys, 1024, t, t); 
-
-            std::vector<long> times;
-            for (int i = 0; i < 10; ++i) {
-
-                auto start = std::chrono::high_resolution_clock::now();
-                // std::cout << "CC " << experiment_client_sets[i][0].size() << " " << experiment_server_sets[i].size() << std::endl;
-                // for (size_t c = 0; c < experiment_client_sets[i].size(); ++c) {
-                //     std::cout << "Client " << c << ": ";
-                //     for( size_t v = 0; v < experiment_client_sets[i][c].size(); ++v)
-                //         std::cout << experiment_client_sets[i][c][v] << " ";
-                //     std::cout << std::endl;
-                // }
-                // std::cout << "Server: ";
-                // for(size_t v = 0; v < experiment_server_sets[i].size(); ++v)
-                //     std::cout << experiment_server_sets[i][v] << " ";
-                // std::cout << std::endl;
-                for(size_t c = 0; c < experiment_client_sets[i].size(); ++c) {
-                    std::cout << "Client " << c << " set size: " << experiment_client_sets[i][c].size() << ", ";
-                }
-                std::cout << "Server set size: " << experiment_server_sets[i].size() << std::endl;
-
-                std::vector<long> result = multiparty_psi(experiment_client_sets[i], experiment_server_sets[i], params, keys);
-                std::vector<long> expected = compute_intersection_non_private(experiment_client_sets[i], experiment_server_sets[i]);
-                std::cout << "Expected size: " << expected.size() << ", MPSI size: " << result.size() << std::endl;
-                if (result != expected) {
-                    std::cout << "Error: MPSI result does not match expected intersection! "
-                         << result.size() - expected.size() << " false positives." << std::endl;
-                    print_set("MPSI Result", result);
-                    print_set("Expected", expected); 
-                }
-                auto stop = std::chrono::high_resolution_clock::now();
-                times.push_back(std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count());
-            }
-
-            double mean = sample_mean(times);
-            double std_dev = sample_std(times, mean);
-            std::cout << "(" << std::fixed << mean << ", " << std_dev << ")" << std::endl;
+        // Generate data
+        std::vector<std::vector<std::vector<long>>> experiment_client_sets;
+        std::vector<std::vector<long>> experiment_server_sets;
+        for (int i = 0; i < repetitions; ++i) {
+            std::vector<std::vector<long>> client_sets;
+            std::vector<long> server_set;
+            generate_clients_and_server_sets(t - 1, set_size, domain_size, client_sets, server_set);
+            experiment_client_sets.push_back(client_sets);
+            experiment_server_sets.push_back(server_set);
         }
+
+        BloomFilterParams params(set_size, -6); 
+        Keys keys;
+        // threshold t, parties n = t.
+        key_gen(&keys, 1024, t, t); 
+
+        std::vector<long> times;
+        for (int i = 0; i < repetitions; ++i) {
+            auto start = std::chrono::high_resolution_clock::now();
+            std::vector<long> result = multiparty_psi(
+                experiment_client_sets[i], 
+                experiment_server_sets[i], 
+                params, 
+                keys
+            );
+            auto stop = std::chrono::high_resolution_clock::now();
+
+            std::vector<long> expected = compute_intersection_non_private(
+                experiment_client_sets[i], 
+                experiment_server_sets[i]
+            );
+            std::cout << "Expected size: " << expected.size() << ", MPSI size: " << result.size();
+            if (result != expected) {
+                std::vector<long> difference;
+                std::set_difference(result.begin(), result.end(),
+                    expected.begin(), expected.end(),
+                    std::back_inserter(difference));
+                std::cout << "; " << result.size() - expected.size() << " False positives: ";
+                print_set("", difference);
+            } else
+                std::cout << std::endl;                       
+            times.push_back(std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count());
+        }
+
+        double mean = sample_mean(times);
+        double std_dev = sample_std(times, mean);
+        std::cout << "(" << std::fixed << mean << ", " << std_dev << ")" << std::endl;
     }
 }
