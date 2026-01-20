@@ -13,5 +13,5 @@ mkdir build
 cd build
 cmake ..
 cmake --build . --config Release
-./ruan_mpsi
+./ruan_mpsi_shamir
 ```

@@ -6,9 +6,9 @@
 #include "el_gamal.hpp"
 #include "bloom_filter.hpp"
 
-std::vector<size_t> multiparty_psi(
-    const std::vector<std::vector<size_t>>& client_sets,
-    const std::vector<size_t>& server_set,
+std::vector<long> multiparty_psi(
+    const std::vector<std::vector<long>>& client_sets,
+    const std::vector<long>& server_set,
     BloomFilterParams& bf_params,
     const Keys& keys
 );

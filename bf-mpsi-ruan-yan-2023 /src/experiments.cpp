@@ -7,7 +7,7 @@
 #include <random>
 #include "mpsi_protocol.hpp" 
 
-void print_set(const std::string& name, const std::vector<size_t>& set) {
+void print_set(const std::string& name, const std::vector<long>& set) {
     std::cout << name << ": { ";
     for (size_t i = 0; i < set.size(); ++i) {
         std::cout << set[i] << (i < set.size() - 1 ? ", " : "");
@@ -15,29 +15,29 @@ void print_set(const std::string& name, const std::vector<size_t>& set) {
     std::cout << " }" << std::endl;
 }
 
-std::vector<size_t> compute_intersection_non_private(const std::vector<std::vector<size_t>>& client_sets, 
-                                                     const std::vector<size_t>& server_set) {
+std::vector<long> compute_intersection_non_private(const std::vector<std::vector<long>>& client_sets, 
+                                                     const std::vector<long>& server_set) {
     if (client_sets.empty()) 
         return {};
 
-    std::vector<size_t> current_intersection = client_sets[0];
+    std::vector<long> current_intersection = client_sets[0];
     std::sort(current_intersection.begin(), current_intersection.end());
     
     for (size_t i = 1; i < client_sets.size(); ++i) {
-        std::vector<size_t> next_set = client_sets[i];
+        std::vector<long> next_set = client_sets[i];
         std::sort(next_set.begin(), next_set.end());
         
-        std::vector<size_t> temp;
+        std::vector<long> temp;
         std::set_intersection(current_intersection.begin(), current_intersection.end(),
                               next_set.begin(), next_set.end(),
                               std::back_inserter(temp));
         current_intersection = temp;
     }
 
-    std::vector<size_t> server_sorted = server_set;
+    std::vector<long> server_sorted = server_set;
     std::sort(server_sorted.begin(), server_sorted.end());
     
-    std::vector<size_t> final_intersection;
+    std::vector<long> final_intersection;
     std::set_intersection(current_intersection.begin(), current_intersection.end(),
                           server_sorted.begin(), server_sorted.end(),
                           std::back_inserter(final_intersection));
@@ -45,8 +45,8 @@ std::vector<size_t> compute_intersection_non_private(const std::vector<std::vect
     return final_intersection;
 }
 
-std::vector<size_t> run_experiment(const std::vector<std::vector<size_t>>& client_sets, 
-                    const std::vector<size_t>& server_set) {
+std::vector<long> run_experiment(const std::vector<std::vector<long>>& client_sets, 
+                    const std::vector<long>& server_set) {
 
     size_t max_set_size = server_set.size();
     for(const auto& set : client_sets) {
@@ -70,7 +70,7 @@ std::vector<size_t> run_experiment(const std::vector<std::vector<size_t>>& clien
               << ", k=" << global_params.seeds.size() << std::endl;
 
     auto start = std::chrono::high_resolution_clock::now();
-    std::vector<size_t> result = multiparty_psi(
+    std::vector<long> result = multiparty_psi(
         client_sets, 
         server_set, 
         global_params,
@@ -86,13 +86,13 @@ std::vector<size_t> run_experiment(const std::vector<std::vector<size_t>>& clien
     return result;
 }
 
-void run_random_experiment_and_compare(size_t num_clients, size_t set_size, size_t universe_size) {
+void run_random_experiment_and_compare(long num_clients, long set_size, long universe_size) {
     std::cout << "Random Experiment (Clients: " << num_clients 
               << ", Set Size: " << set_size << ")" << std::endl;
 
-    std::vector<std::vector<size_t>> client_sets;
+    std::vector<std::vector<long>> client_sets;
     for(size_t i = 0; i < num_clients; ++i) {
-        std::vector<size_t> set;
+        std::vector<long> set;
         for(size_t j = 0; j < set_size; ++j)
             set.push_back(rand() % universe_size);
         std::sort(set.begin(), set.end());
@@ -100,16 +100,16 @@ void run_random_experiment_and_compare(size_t num_clients, size_t set_size, size
         client_sets.push_back(set);
     }
 
-    std::vector<size_t> server_set;
+    std::vector<long> server_set;
     for(size_t j = 0; j < set_size; ++j) 
         server_set.push_back(rand() % universe_size);
     std::sort(server_set.begin(), server_set.end());
     server_set.erase(std::unique(server_set.begin(), server_set.end()), server_set.end());
 
-    std::vector<size_t> expected = compute_intersection_non_private(client_sets, server_set);
+    std::vector<long> expected = compute_intersection_non_private(client_sets, server_set);
     print_set("Expected Intersection (Non-Private)", expected);
 
-    std::vector<size_t> actual = run_experiment(client_sets, server_set);
+    std::vector<long> actual = run_experiment(client_sets, server_set);
     
     std::sort(actual.begin(), actual.end());
     if (actual == expected) {

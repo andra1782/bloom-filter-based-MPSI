@@ -1,8 +1,8 @@
 #include "mpsi_protocol.hpp"
 
-std::vector<size_t> multiparty_psi(
-    const std::vector<std::vector<size_t>>& client_sets,
-    const std::vector<size_t>& server_set,
+std::vector<long> multiparty_psi(
+    const std::vector<std::vector<long>>& client_sets,
+    const std::vector<long>& server_set,
     BloomFilterParams& bf_params,
     const Keys& keys) 
 {
@@ -27,7 +27,7 @@ std::vector<size_t> multiparty_psi(
     // Server blinding
     std::vector<ZZ> r_js;
     std::vector<Ciphertext> w_js;
-    for (size_t x : server_set) {
+    for (long x : server_set) {
         ZZ r = RandomBnd(keys.params.p - 1) + 1;
         r_js.push_back(r);
         Ciphertext enc_x = encrypt(to_ZZ(x), keys.params);
@@ -37,8 +37,8 @@ std::vector<size_t> multiparty_psi(
     }
 
     // Online stage
-    std::vector<size_t> result;
-    for (size_t j = 0; j < server_set.size(); j++) {
+    std::vector<long> result;
+    for (long j = 0; j < server_set.size(); j++) {
         Ciphertext c_j = w_js[j];
         for (const auto& erbf : all_erbfs) {
             for (uint64_t seed : bf_params.seeds) {

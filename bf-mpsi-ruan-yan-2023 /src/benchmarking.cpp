@@ -9,6 +9,33 @@
 #include "mpsi_protocol.hpp" 
 #include "experiments.hpp"
 
+// https://github.com/jellevos/bitset_mpsi/blob/master/main.cpp
+std::vector<long> sample_set(long set_size, long domain_size) {
+    std::default_random_engine generator(rand());
+    std::uniform_int_distribution<long> distribution(0, domain_size-1);
+
+    std::vector<long> set;
+    set.reserve(set_size);
+
+    while (set.size() < set_size) {
+        long element = distribution(generator);
+        bool duplicate = false;
+
+        for (long other_element : set) {
+            if (element == other_element) {
+                duplicate = true;
+                break;
+            }
+        }
+
+        if (!duplicate) {
+            set.push_back(element);
+        }
+    }
+
+    return set;
+}
+
 double sample_mean(const std::vector<long>& measurements) {
     double sum = 0;
     for (long measurement : measurements) {
@@ -26,10 +53,10 @@ double sample_std(const std::vector<long>& measurements, double mean) {
     return std::sqrt(sum / (measurements.size() - 1.0));
 }
 
-void benchmark(std::vector<long> parties_list, std::vector<long> set_size_exponents) {
-    size_t universe_size = 256; 
+void benchmark(std::vector<long> number_of_parties_list, std::vector<long> set_size_exponents) {
+    long universe_size = 256; 
 
-    for (long t : parties_list) {
+    for (long t : number_of_parties_list) {
         std::cout << "\nBenchmarking " << t << " parties" << std::endl;
         std::cout << "Format: (Mean Time ms, Std Dev ms)" << std::endl;
         
@@ -37,15 +64,15 @@ void benchmark(std::vector<long> parties_list, std::vector<long> set_size_expone
             std::cout << "Results for set size 2^" << exp << ": ";
             size_t set_size = (1 << exp); 
             
-            std::vector<std::vector<std::vector<size_t>>> experiment_client_sets;
-            std::vector<std::vector<size_t>> experiment_server_sets;
+            std::vector<std::vector<std::vector<long>>> experiment_client_sets;
+            std::vector<std::vector<long>> experiment_server_sets;
 
             // Generate data for 10 trials
             for (int i = 0; i < 10; ++i) {
-                std::vector<std::vector<size_t>> client_sets;
+                std::vector<std::vector<long>> client_sets;
                 // t = #parties, so num_clients = t - 1
                 for (int j = 0; j < t - 1; ++j) {
-                    std::vector<size_t> set;
+                    std::vector<long> set;
                     set.reserve(set_size);
                     for (size_t k = 0; k < set_size; ++k) set.push_back(rand() % universe_size);
                     std::sort(set.begin(), set.end());
@@ -54,7 +81,7 @@ void benchmark(std::vector<long> parties_list, std::vector<long> set_size_expone
                 }
                 experiment_client_sets.push_back(client_sets);
 
-                std::vector<size_t> s_set;
+                std::vector<long> s_set;
                 s_set.reserve(set_size);
                 for (size_t k = 0; k < set_size; ++k) s_set.push_back(rand() % universe_size);
                 std::sort(s_set.begin(), s_set.end());
@@ -87,8 +114,8 @@ void benchmark(std::vector<long> parties_list, std::vector<long> set_size_expone
                 }
                 std::cout << "Server set size: " << experiment_server_sets[i].size() << std::endl;
 
-                std::vector<size_t> result = multiparty_psi(experiment_client_sets[i], experiment_server_sets[i], params, keys);
-                std::vector<size_t> expected = compute_intersection_non_private(experiment_client_sets[i], experiment_server_sets[i]);
+                std::vector<long> result = multiparty_psi(experiment_client_sets[i], experiment_server_sets[i], params, keys);
+                std::vector<long> expected = compute_intersection_non_private(experiment_client_sets[i], experiment_server_sets[i]);
                 std::cout << "Expected size: " << expected.size() << ", MPSI size: " << result.size() << std::endl;
                 if (result != expected) {
                     std::cout << "Error: MPSI result does not match expected intersection! "
