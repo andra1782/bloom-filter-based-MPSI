@@ -7,7 +7,7 @@ void benchmark(
     long repetitions, 
     std::vector<long> parties_list, 
     long set_size, 
-    long domain_size
+    double intersection_ratio
 );
 
 #endif

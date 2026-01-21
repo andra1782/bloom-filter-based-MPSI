@@ -30,7 +30,7 @@ std::vector<long> multiparty_psi(
     for (long x : server_set) {
         ZZ r = RandomBnd(keys.params.p - 1) + 1;
         r_js.push_back(r);
-        Ciphertext enc_x = encrypt(to_ZZ(x), keys.params);
+        Ciphertext enc_x = encrypt(to_ZZ(x + 1), keys.params); // avoid encrypting 0
         Ciphertext enc_r = encrypt(r, keys.params);
         w_js.push_back({MulMod(enc_x.c1, enc_r.c1, keys.params.p), 
                         MulMod(enc_x.c2, enc_r.c2, keys.params.p)});
@@ -48,15 +48,16 @@ std::vector<long> multiparty_psi(
             }
         }
 
+        ZZ q = (keys.params.p - 1) / 2;
         ZZ combined_shares = to_ZZ(1);
         for (int i = 1; i <= total_parties; i++) {
-            ZZ delta = compute_delta(i, total_parties, keys.params.p);
+            ZZ delta = compute_delta(i, total_parties, q);
             // i-1 since the vector is 0-indexed, but 'delta' uses 1-indexing
             combined_shares = MulMod(combined_shares, compute_share(c_j.c1, keys.key_shares[i-1], delta, keys.params.p), keys.params.p);
-        }
+        }   
 
         ZZ decrypted = MulMod(c_j.c2, InvMod(combined_shares, keys.params.p), keys.params.p);
-        if (decrypted == MulMod(to_ZZ(server_set[j]), r_js[j], keys.params.p)) {
+        if (decrypted == MulMod(to_ZZ(server_set[j] + 1), r_js[j], keys.params.p)) {
             result.push_back(server_set[j]);
         }
     }

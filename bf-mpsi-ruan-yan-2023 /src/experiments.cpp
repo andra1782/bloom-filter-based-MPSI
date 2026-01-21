@@ -75,7 +75,7 @@ std::vector<long> run_experiment(const std::vector<std::vector<long>>& client_se
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
 
-    //print_set("Result", result);
+    print_set("Result", result);
     std::cout << "Time: " << duration.count() << " ms" << std::endl;
     std::cout << std::endl;
 

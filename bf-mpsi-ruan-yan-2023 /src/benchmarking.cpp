@@ -72,12 +72,14 @@ void generate_clients_and_server_sets(
     std::sort(server_set.begin(), server_set.end());
 }
 
-void benchmark(long repetitions, std::vector<long> number_of_parties_list, long set_size, long domain_size) {
+void benchmark(long repetitions, std::vector<long> number_of_parties_list, long set_size, double intersection_ratio) {
     for (long t : number_of_parties_list) {
-        std::cout << "\nBenchmarking " << t << " parties";
-        std::cout << ", set size " << set_size;
-        std::cout << ", format: (Mean Time ms, Std Dev ms)" << ": " << std::endl;
-
+        // Calculate the domain size to achieve the target intersection to set size ratio
+        // D = n / (ratio)^(1/t)
+        double exponent = 1.0 / t;
+        double domain_size_double = set_size / std::pow(intersection_ratio, exponent);
+        long domain_size = static_cast<long>(std::ceil(domain_size_double));
+        
         // Generate data
         std::vector<std::vector<std::vector<long>>> experiment_client_sets;
         std::vector<std::vector<long>> experiment_server_sets;
@@ -89,10 +91,15 @@ void benchmark(long repetitions, std::vector<long> number_of_parties_list, long 
             experiment_server_sets.push_back(server_set);
         }
 
-        BloomFilterParams params(set_size, -6); 
+        BloomFilterParams params(set_size, -30); 
         Keys keys;
         // threshold t, parties n = t.
         key_gen(&keys, 1024, t, t); 
+
+        std::cout << "\nBenchmarking " << t << " parties, Set size " << set_size << ", Domain size " << domain_size;
+        std::cout << ", Params: m=" << params.bin_count << ", k=" << params.seeds.size();
+        std::cout << ", Format: (Mean Time ms, Std Dev ms)" << ": " << std::endl;
+
 
         std::vector<long> times;
         for (int i = 0; i < repetitions; ++i) {

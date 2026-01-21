@@ -32,10 +32,12 @@ int main() {
         {5, 12, 100, 200} // Server
     );
 
-    // 2, 5 and 10 parties, set sizes 2^4, 2^6 and 2^8
-    benchmark(10, {2, 5, 10}, 16, 32);
-    benchmark(10, {2, 5, 10}, 64, 128);
-    benchmark(10, {2, 5, 10}, 256, 512);
+    // 2, 5 and 10 parties, set sizes 2^4, 2^6, 2^8, 2^10
+    // benchmark(10, {2, 5, 10}, 16, 0.25);
+    // benchmark(10, {2, 5, 10}, 64, 0.25);
+    benchmark(10, {2, 5, 10, 50}, 256, 0.25);
+    // benchmark(10, {2, 5, 10}, 1024, 0.25);
+    // benchmark(10, {2, 5, 10}, 4096, 0.25);
 
     return 0;
 }
