@@ -10,7 +10,11 @@ std::vector<long> multiparty_psi(
     const std::vector<std::vector<long>>& client_sets,
     const std::vector<long>& server_set,
     BloomFilterParams& bf_params,
-    const Keys& keys
+    const Keys& keys,
+    double* client_prep_time,
+    double* client_online_time,
+    double* server_prep_time,
+    double* server_online_time
 );
 
 #endif 

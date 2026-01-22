@@ -65,19 +65,29 @@ std::vector<long> run_experiment(const std::vector<std::vector<long>>& client_se
               << ", m=" << global_params.bin_count 
               << ", k=" << global_params.seeds.size() << std::endl;
 
-    auto start = std::chrono::high_resolution_clock::now();
+    double client_prep_time = 0.0;
+    double client_online_time = 0.0;
+    double server_prep_time = 0.0;
+    double server_online_time = 0.0;
+
     std::vector<long> result = multiparty_psi(
         client_sets, 
         server_set, 
         global_params,
-        keys
+        keys,
+        &client_prep_time,
+        &client_online_time,
+        &server_prep_time,
+        &server_online_time
     );
-    auto stop = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+    std::cout << "Result: ";
+    print_set("MPSI", result);
 
-    print_set("Result", result);
-    std::cout << "Time: " << duration.count() << " ms" << std::endl;
+    std::cout << "Client prep time: " << client_prep_time << " ms";
+    std::cout << ", Client online time: " << client_online_time << " ms";
+    std::cout << ", Server prep time: " << server_prep_time << " ms";
+    std::cout << ", Server online time: " << server_online_time << " ms" << std::endl; 
     std::cout << std::endl;
-
+    
     return result;
 }

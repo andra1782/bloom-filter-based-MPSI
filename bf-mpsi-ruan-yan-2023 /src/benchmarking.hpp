@@ -6,8 +6,8 @@
 void benchmark(
     long repetitions, 
     std::vector<long> parties_list, 
-    long set_size, 
-    double intersection_ratio
+    long set_size_clients, 
+    long set_size_server
 );
 
 #endif
