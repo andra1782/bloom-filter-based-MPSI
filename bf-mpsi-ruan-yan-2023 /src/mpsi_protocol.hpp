@@ -14,7 +14,11 @@ std::vector<long> multiparty_psi(
     double* client_prep_time,
     double* client_online_time,
     double* server_prep_time,
-    double* server_online_time
+    double* server_online_time,
+    size_t* server_sent_bytes, 
+    size_t* server_received_bytes,
+    size_t* client_sent_bytes,
+    size_t* client_received_bytes
 );
 
 #endif 

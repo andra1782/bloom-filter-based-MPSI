@@ -1,6 +1,10 @@
 #include "mpsi_protocol.hpp"
 #include <chrono>
 
+size_t get_ciphertext_size(const Ciphertext& ct) {
+    return NumBytes(ct.c1) + NumBytes(ct.c2);
+}
+
 std::vector<long> multiparty_psi(
     const std::vector<std::vector<long>>& client_sets,
     const std::vector<long>& server_set,
@@ -9,14 +13,19 @@ std::vector<long> multiparty_psi(
     double* client_prep_time,
     double* client_online_time,
     double* server_prep_time,
-    double* server_online_time) 
-{
+    double* server_online_time,
+    size_t* server_sent_bytes, 
+    size_t* server_received_bytes,
+    size_t* client_sent_bytes,
+    size_t* client_received_bytes
+) {
     using namespace std::chrono;
     int n_clients = client_sets.size();
     int total_parties = n_clients + 1; 
 
     // Initialization stage
     auto start = high_resolution_clock::now();
+    size_t all_erbfs_size_bytes = 0;
     std::vector<std::vector<Ciphertext>> all_erbfs;
     for (const auto& set : client_sets) {
         BloomFilter bf(bf_params);
@@ -24,14 +33,21 @@ std::vector<long> multiparty_psi(
             bf.insert(x);
 
         std::vector<Ciphertext> erbf;
+        size_t erbf_size_bytes = 0;
         for (size_t l = 0; l < bf_params.bin_count; l++) {
             ZZ m = bf.contains_bit(l) ? to_ZZ(1) : (RandomBnd(keys.params.p - 2) + 2);
-            erbf.push_back(encrypt(m, keys.params));
+            Ciphertext ciphertext = encrypt(m, keys.params);
+            erbf.push_back(ciphertext);
+            erbf_size_bytes += get_ciphertext_size(ciphertext);
         }
         all_erbfs.push_back(erbf);
+        all_erbfs_size_bytes += erbf_size_bytes;
     }
     auto stop = high_resolution_clock::now();
     *client_prep_time = duration<double, std::milli>(stop - start).count() / n_clients;
+    // Clients send ERBFs to server
+    *client_sent_bytes += all_erbfs_size_bytes / n_clients;
+    *server_received_bytes += all_erbfs_size_bytes;
 
     // Server blinding
     start = high_resolution_clock::now();
@@ -63,9 +79,13 @@ std::vector<long> multiparty_psi(
         }
         stop = high_resolution_clock::now();
         *server_online_time += duration<double, std::milli>(stop - start).count();
+        // Server sends c_j to all clients
+        *server_sent_bytes += get_ciphertext_size(c_j) * n_clients;
+        *client_received_bytes += get_ciphertext_size(c_j);
 
         ZZ combined_shares = to_ZZ(1);
         double current_item_client_time_sum = 0.0;
+        size_t all_shares_size_bytes = 0;
         for (int i = 1; i <= total_parties; i++) {
             start = high_resolution_clock::now();
             ZZ delta = compute_delta(i, total_parties, q);
@@ -74,17 +94,21 @@ std::vector<long> multiparty_psi(
             stop = high_resolution_clock::now();
             double share_time = duration<double, std::milli>(stop - start).count();
 
-            if (i <= n_clients) 
+            if (i <= n_clients) {
                 current_item_client_time_sum += share_time;
-            else 
+                // Client sends share to server
+                all_shares_size_bytes += NumBytes(share);
+            } else 
                 *server_online_time += share_time;
 
             start = high_resolution_clock::now();
             combined_shares = MulMod(combined_shares, share, keys.params.p);
             stop = high_resolution_clock::now();
             *server_online_time += duration<double, std::milli>(stop - start).count();
-        }   
+        }
         *client_online_time += current_item_client_time_sum / n_clients;
+        *client_sent_bytes += all_shares_size_bytes / n_clients;
+        *server_received_bytes += all_shares_size_bytes;
         
         start = high_resolution_clock::now();
         ZZ decrypted = MulMod(c_j.c2, InvMod(combined_shares, keys.params.p), keys.params.p);

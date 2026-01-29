@@ -57,11 +57,12 @@ std::vector<long> run_experiment(const std::vector<std::vector<long>>& client_se
     BloomFilterParams global_params(max_set_size, -10);
 
     Keys keys;
-    // n = clients + 1 (server), t = n 
-    int n = client_sets.size() + 1;
-    key_gen(&keys, 1024, n, n); 
+    // t = clients + 1 (server)
+    int t = client_sets.size() + 1;
+    key_gen(&keys, 1024, t, t); 
 
-    std::cout << "Params: n=" << max_set_size 
+    std::cout << "Params: " << "t=" << t
+              << ", n=" << max_set_size 
               << ", m=" << global_params.bin_count 
               << ", k=" << global_params.seeds.size() << std::endl;
 
@@ -69,6 +70,10 @@ std::vector<long> run_experiment(const std::vector<std::vector<long>>& client_se
     double client_online_time = 0.0;
     double server_prep_time = 0.0;
     double server_online_time = 0.0;
+    size_t server_sent_bytes = 0;
+    size_t server_received_bytes = 0;
+    size_t client_sent_bytes = 0;
+    size_t client_received_bytes = 0;
 
     std::vector<long> result = multiparty_psi(
         client_sets, 
@@ -78,7 +83,11 @@ std::vector<long> run_experiment(const std::vector<std::vector<long>>& client_se
         &client_prep_time,
         &client_online_time,
         &server_prep_time,
-        &server_online_time
+        &server_online_time,
+        &server_sent_bytes,
+        &server_received_bytes,
+        &client_sent_bytes,
+        &client_received_bytes
     );
     std::cout << "Result: ";
     print_set("MPSI", result);
@@ -87,6 +96,10 @@ std::vector<long> run_experiment(const std::vector<std::vector<long>>& client_se
     std::cout << ", Client online time: " << client_online_time << " ms";
     std::cout << ", Server prep time: " << server_prep_time << " ms";
     std::cout << ", Server online time: " << server_online_time << " ms" << std::endl; 
+    std::cout << "Server sent bytes: " << server_sent_bytes;
+    std::cout << ", Server received bytes: " << server_received_bytes;
+    std::cout << ", Client sent bytes: " << client_sent_bytes;
+    std::cout << ", Client received bytes: " << client_received_bytes << std::endl;
     std::cout << std::endl;
     
     return result;
