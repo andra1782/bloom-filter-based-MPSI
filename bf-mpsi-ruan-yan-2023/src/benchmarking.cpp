@@ -86,7 +86,7 @@ void generate_clients_and_server_sets(
     std::sort(server_set.begin(), server_set.end());
 }
 
-void benchmark(long repetitions, std::vector<long> number_of_parties_list, long set_size_clients, long set_size_server) {
+void benchmark(long repetitions, std::vector<long> number_of_parties_list, long set_size_clients, long set_size_server, int false_positive_exponent=-30) {
     long domain_size = static_cast<long>(std::ceil(set_size_server * 1.25));
     // long domain_size = set_size_server * 1000;
 
@@ -102,7 +102,7 @@ void benchmark(long repetitions, std::vector<long> number_of_parties_list, long 
             experiment_server_sets.push_back(server_set);
         }
 
-        BloomFilterParams params(set_size_clients, -30); 
+        BloomFilterParams params(set_size_clients, false_positive_exponent); 
         Keys keys;
         // threshold t, parties n = t.
         key_gen(&keys, 1024, t, t); 
