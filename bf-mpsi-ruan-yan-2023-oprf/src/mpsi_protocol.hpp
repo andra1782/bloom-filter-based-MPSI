@@ -5,6 +5,7 @@
 #include <NTL/ZZ.h>
 #include "el_gamal.hpp"
 #include "bloom_filter.hpp"
+#include <openssl/sha.h>
 
 std::vector<long> multiparty_psi(
     const std::vector<std::vector<long>>& client_sets,

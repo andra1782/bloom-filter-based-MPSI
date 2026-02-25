@@ -23,14 +23,30 @@ std::vector<long> multiparty_psi(
     int n_clients = client_sets.size();
     int total_parties = n_clients + 1; 
 
+    // Clients agree on a key k_OPRF (one client distributes to all in a star topology)
+    ZZ q = (keys.params.p - 1) / 2;
+    ZZ k_oprf = RandomBnd(q - 1) + 1;
+    *client_sent_bytes += NumBytes(k_oprf) * (n_clients - 1);
+
     // Initialization stage
     auto start = high_resolution_clock::now();
     size_t all_erbfs_size_bytes = 0;
     std::vector<std::vector<Ciphertext>> all_erbfs;
     for (const auto& set : client_sets) {
         BloomFilter bf(bf_params);
-        for (size_t x : set) 
-            bf.insert(x);
+        for (size_t x : set) {
+            unsigned char hash_buf[SHA256_DIGEST_LENGTH];
+            SHA256(reinterpret_cast<const unsigned char*>(&x), sizeof(x), hash_buf);
+
+            ZZ inner_hash = ZZFromBytes(hash_buf, SHA256_DIGEST_LENGTH);
+            inner_hash = PowerMod(inner_hash, 2, keys.params.p); 
+            ZZ oprf_result = PowerMod(inner_hash, k_oprf, keys.params.p); 
+
+            size_t bf_element = 0;
+            BytesFromZZ(reinterpret_cast<unsigned char*>(&bf_element), oprf_result, sizeof(size_t));
+
+            bf.insert(bf_element);
+        };
 
         std::vector<Ciphertext> erbf;
         size_t erbf_size_bytes = 0;
@@ -65,14 +81,59 @@ std::vector<long> multiparty_psi(
     *server_prep_time = duration<double, std::milli>(stop - start).count();
 
     // Online stage
-    ZZ q = (keys.params.p - 1) / 2;
+    std::vector<ZZ> t_blinds(server_set.size());
+    std::vector<ZZ> blinded_queries(server_set.size());
+
+    // OPRF
+    // Server Request
+    start = high_resolution_clock::now();
+    for (size_t j = 0; j < server_set.size(); j++) {
+        unsigned char hash_buf[SHA256_DIGEST_LENGTH];
+        SHA256(reinterpret_cast<const unsigned char*>(&server_set[j]), sizeof(server_set[j]), hash_buf);
+        ZZ inner_hash = ZZFromBytes(hash_buf, SHA256_DIGEST_LENGTH);
+        inner_hash = PowerMod(inner_hash, 2, keys.params.p); // quadratic residues
+
+        t_blinds[j] = RandomBnd(q - 1) + 1;
+        blinded_queries[j] = PowerMod(inner_hash, t_blinds[j], keys.params.p);
+        *server_sent_bytes += NumBytes(blinded_queries[j]);
+        *client_received_bytes += NumBytes(blinded_queries[j]);
+    }
+    stop = high_resolution_clock::now();
+    *server_online_time += duration<double, std::milli>(stop - start).count();
+
+    // Clients Eval (one client is enough since they all have the same k_OPRF)
+    start = high_resolution_clock::now();
+    std::vector<ZZ> evaluated_queries(server_set.size());
+    for (size_t j = 0; j < server_set.size(); j++) {
+        evaluated_queries[j] = PowerMod(blinded_queries[j], k_oprf, keys.params.p);
+        *client_sent_bytes += NumBytes(evaluated_queries[j]);
+        *server_received_bytes += NumBytes(evaluated_queries[j]);
+    }
+    stop = high_resolution_clock::now();
+    *client_online_time += duration<double, std::milli>(stop - start).count();
+
+    // Server Recover
+    start = high_resolution_clock::now();
+    std::vector<size_t> server_bf_elements(server_set.size());
+    for (size_t j = 0; j < server_set.size(); j++) {
+        ZZ t_inv = InvMod(t_blinds[j], q);
+        ZZ oprf_output = PowerMod(evaluated_queries[j], t_inv, keys.params.p);
+
+        size_t bf_element = 0;
+        BytesFromZZ(reinterpret_cast<unsigned char*>(&bf_element), oprf_output, sizeof(size_t));
+        server_bf_elements[j] = bf_element;
+    }
+    stop = high_resolution_clock::now();
+    *server_online_time += duration<double, std::milli>(stop - start).count();
+
+    // Intersection Computation
     std::vector<long> result;
     for (long j = 0; j < server_set.size(); j++) {
         start = high_resolution_clock::now();
         Ciphertext c_j = w_js[j];
         for (const auto& erbf : all_erbfs) {
             for (uint64_t seed : bf_params.seeds) {
-                size_t idx = hash_element(server_set[j], seed) % bf_params.bin_count;
+                size_t idx = hash_element(server_bf_elements[j], seed) % bf_params.bin_count;
                 c_j.c1 = MulMod(c_j.c1, erbf[idx].c1, keys.params.p);
                 c_j.c2 = MulMod(c_j.c2, erbf[idx].c2, keys.params.p);
             }

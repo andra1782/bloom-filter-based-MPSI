@@ -13,6 +13,8 @@ if(NOT EXISTS "${CMAKE_SOURCE_DIR}/src/xxhash.h")
 	)
 endif()
 
+find_package(OpenSSL REQUIRED)
+
 file(GLOB SOURCES CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/*.cpp)
 
 add_executable(ruan_mpsi_shamir_oprf ${SOURCES})
@@ -28,6 +30,6 @@ endif()
 
 target_include_directories(ruan_mpsi_shamir_oprf PRIVATE ${CMAKE_SOURCE_DIR}/src ${NTL_INCLUDE_DIR})
 
-target_link_libraries(ruan_mpsi_shamir_oprf PRIVATE ${NTL_LIBRARY})
+target_link_libraries(ruan_mpsi_shamir_oprf PRIVATE ${NTL_LIBRARY} OpenSSL::Crypto)
 
 install(TARGETS ruan_mpsi_shamir_oprf RUNTIME DESTINATION bin)
