@@ -5,6 +5,7 @@ Master's Thesis CS Computer Science, Delft University of Technology
 ```
 sudo apt update
 sudo apt install build-essential cmake libgmp-dev libntl-dev
+sudo apt-get install libssl-dev
 ```
 
 ```

@@ -12,7 +12,7 @@ size_t hash_element(const size_t& element, uint64_t seed) {
     return static_cast<size_t>(hash);
 }
 
-BloomFilterParams::BloomFilterParams(size_t element_count, int64_t e_pow) {
+BloomFilterParams::BloomFilterParams(size_t element_count, int64_t e_pow, ZZ p) {
     // k = - ln(epsilon) / ln(2), since epsilon = 2^e_pow, k = -e_pow
     size_t hash_count = static_cast<size_t>(-e_pow);
 
@@ -26,8 +26,9 @@ BloomFilterParams::BloomFilterParams(size_t element_count, int64_t e_pow) {
     
     this->seeds.reserve(hash_count);
     for(size_t i = 0; i < hash_count; ++i) {
-        this->seeds.push_back(static_cast<uint64_t>(i));
+        this->seeds.push_back(static_cast<uint64_t>(rand()) + 1); 
     }
+    this->p = p;
 }
 
 BloomFilter::BloomFilter(const BloomFilterParams& params) {
@@ -54,4 +55,65 @@ bool BloomFilter::contains(const size_t& element) const {
         }
     }
     return true;
+}
+
+GarbledBloomFilter::GarbledBloomFilter(const BloomFilterParams& params) {
+    this->seeds = params.seeds;
+    this->bins.resize(params.bin_count, to_ZZ(0));
+    this->p = params.p;
+}
+
+ZZ GarbledBloomFilter::generate_random_share() const {
+    return RandomBnd(p - 1) + 1; // [1, p-1]
+}
+
+bool GarbledBloomFilter::insert_set(const std::vector<long>& elements) {
+    size_t bin_count = bins.size();
+    for(size_t element : elements) {
+        long emptySlot = -1;
+        ZZ finalShare = to_ZZ(1); // all shares 1 mod p
+
+        for (uint64_t seed : seeds) {
+            size_t j = hash_element(element, seed) % bin_count;
+            
+            if (bins[j] == to_ZZ(0)) {
+                if (emptySlot == -1) {
+                    emptySlot = static_cast<long>(j); 
+                } else {
+                    ZZ new_share = generate_random_share();
+                    bins[j] = new_share;
+                    finalShare = MulMod(finalShare, InvMod(new_share, p), p);
+                }
+            } else {
+                finalShare = MulMod(finalShare, InvMod(bins[j], p), p);
+            }
+        }
+
+        if (emptySlot == -1) 
+            return false; 
+        bins[emptySlot] = finalShare;
+    }
+
+     for (size_t i = 0; i < bins.size(); ++i) {
+        if (bins[i] == to_ZZ(0)) {
+            bins[i] = generate_random_share();
+        }
+    }
+    return true;
+}
+
+bool GarbledBloomFilter::contains(const size_t& element) const {
+    size_t bin_count = bins.size();
+    ZZ recovered = to_ZZ(1); 
+    
+    for (uint64_t seed : seeds) {
+        size_t j = hash_element(element, seed) % bin_count;
+        recovered = MulMod(recovered, bins[j], p);
+    }
+    
+    return recovered == to_ZZ(1);
+}
+
+void GarbledBloomFilter::clear() {
+    std::fill(bins.begin(), bins.end(), to_ZZ(0));
 }

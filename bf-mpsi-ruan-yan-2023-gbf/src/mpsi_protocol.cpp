@@ -28,15 +28,13 @@ std::vector<long> multiparty_psi(
     size_t all_erbfs_size_bytes = 0;
     std::vector<std::vector<Ciphertext>> all_erbfs;
     for (const auto& set : client_sets) {
-        BloomFilter bf(bf_params);
-        for (size_t x : set) 
-            bf.insert(x);
+        GarbledBloomFilter gbf(bf_params);
+        gbf.insert_set(set);
 
         std::vector<Ciphertext> erbf;
         size_t erbf_size_bytes = 0;
         for (size_t l = 0; l < bf_params.bin_count; l++) {
-            ZZ m = bf.contains_bit(l) ? to_ZZ(1) : (RandomBnd(keys.params.p - 2) + 2);
-            Ciphertext ciphertext = encrypt(m, keys.params);
+            Ciphertext ciphertext = encrypt(gbf.bins[l], keys.params);
             erbf.push_back(ciphertext);
             erbf_size_bytes += get_ciphertext_size(ciphertext);
         }

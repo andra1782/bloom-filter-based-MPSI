@@ -4,13 +4,17 @@
 #include <vector>
 #include <cstdint>
 #include <cstddef> 
+#include <NTL/ZZ.h>
+
+using namespace NTL;
 
 size_t hash_element(const size_t& element, uint64_t seed);
 
 struct BloomFilterParams {
     size_t bin_count;
     std::vector<uint64_t> seeds;
-    BloomFilterParams(size_t element_count, int64_t e_pow);
+    ZZ p;
+    BloomFilterParams(size_t element_count, int64_t e_pow, ZZ p);
 };
 
 struct BloomFilter {
@@ -29,6 +33,20 @@ struct BloomFilter {
     void bitwise_and(const BloomFilter& other);
     size_t get_size_in_bytes() const;
     size_t get_set_bits_count() const;
+};
+
+struct GarbledBloomFilter {
+    std::vector<ZZ> bins;  // m bins
+    std::vector<uint64_t> seeds; // k hash functions
+    ZZ p;
+
+    explicit GarbledBloomFilter(const BloomFilterParams& params);
+    
+    bool insert_set(const std::vector<long>& elements); // returns false if the element cannot be inserted
+    void clear();
+    bool contains(const size_t& element) const;
+
+    ZZ generate_random_share() const;
 };
 
 #endif

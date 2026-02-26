@@ -54,12 +54,12 @@ std::vector<long> run_experiment(const std::vector<std::vector<long>>& client_se
             max_set_size = set.size();
     }
 
-    BloomFilterParams global_params(max_set_size, -10);
-
     Keys keys;
     // t = clients + 1 (server)
     int t = client_sets.size() + 1;
     key_gen(&keys, 1024, t, t); 
+
+    BloomFilterParams global_params(max_set_size, -10, keys.params.p); 
 
     std::cout << "Params: " << "t=" << t
               << ", n=" << max_set_size 
