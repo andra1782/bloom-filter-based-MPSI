@@ -54,7 +54,15 @@ std::vector<long> run_experiment(const std::vector<std::vector<long>>& client_se
             max_set_size = set.size();
     }
 
-    BloomFilterParams global_params(max_set_size, -10);
+    BloomFilterParams global_params(max_set_size, -3);
+
+    // BloomFilter bf(global_params);
+    // bf.insert_set(server_set);
+    // for (size_t x : server_set) {
+    //     std::cout << "Checking if Bloom filter contains " << x << ": " << (bf.contains(x) ? "Yes" : "No") << std::endl;
+    //     if (!bf.contains(x)) 
+    //         std::cerr << "Error: Bloom filter does not contain an element from the server set!" << std::endl;
+    // }
 
     Keys keys;
     // t = clients + 1 (server)

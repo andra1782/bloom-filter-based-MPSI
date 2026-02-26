@@ -4,6 +4,7 @@
 #include <vector>
 #include <cstdint>
 #include <cstddef> 
+#include <random>
 
 size_t hash_element(const size_t& element, uint64_t seed);
 
@@ -14,17 +15,18 @@ struct BloomFilterParams {
 };
 
 struct BloomFilter {
-    std::vector<bool> bins;  // m bins
+    std::vector<uint64_t> bins;  // m bins
     std::vector<uint64_t> seeds; // k hash functions
 
     explicit BloomFilter(const BloomFilterParams& params);
 
-    void insert(size_t element);
+    // void insert(size_t element);
+    void insert_set(const std::vector<long>& elements);
     void clear();
     bool contains(const size_t& element) const;
     
-    bool contains_bit(size_t index) const { return bins[index]; }
-    void set_bit_manually(size_t index, bool val) { bins[index] = val; }
+    bool is_bin_empty(size_t index) const { return bins[index] == 0; }
+    void set_bin_manually(size_t index, uint64_t val) { bins[index] = val; }
 
     void bitwise_and(const BloomFilter& other);
     size_t get_size_in_bytes() const;
