@@ -157,7 +157,7 @@ void benchmark(long repetitions, std::vector<long> number_of_parties_list, long 
                 expected.begin(), expected.end(),
                 std::back_inserter(false_positives));
             if (false_positives.size() > 0) {
-                std::cout << "; " << false_positives.size() << " False positives: ";
+                std::cout << "; " << false_positives.size() << " False positives";
                 print_set("", false_positives);
             }
 
@@ -166,7 +166,7 @@ void benchmark(long repetitions, std::vector<long> number_of_parties_list, long 
                 result.begin(), result.end(),
                 std::back_inserter(false_negatives));
             if (false_negatives.size() > 0) {
-                std::cout << "; " << false_negatives.size() << " False negatives: ";
+                std::cout << "; " << false_negatives.size() << " False negatives";
                 print_set("", false_negatives);
             }
             if (false_positives.size() == 0 && false_negatives.size() == 0) 

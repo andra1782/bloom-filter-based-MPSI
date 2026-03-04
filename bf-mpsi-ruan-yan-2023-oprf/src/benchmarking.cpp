@@ -156,7 +156,7 @@ void benchmark(long repetitions, std::vector<long> number_of_parties_list, long 
                 std::set_difference(result.begin(), result.end(),
                     expected.begin(), expected.end(),
                     std::back_inserter(difference));
-                std::cout << "; " << result.size() - expected.size() << " False positives: ";
+                std::cout << "; " << result.size() - expected.size() << " False positives";
                 print_set("", difference);
             } else
                 std::cout << std::endl; 
