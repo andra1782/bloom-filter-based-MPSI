@@ -151,15 +151,27 @@ void benchmark(long repetitions, std::vector<long> number_of_parties_list, long 
                 experiment_server_sets[i]
             );
             std::cout << "Expected size: " << expected.size() << ", MPSI size: " << result.size();
-            if (result != expected) {
-                std::vector<long> difference;
-                std::set_difference(result.begin(), result.end(),
-                    expected.begin(), expected.end(),
-                    std::back_inserter(difference));
-                std::cout << "; " << result.size() - expected.size() << " False positives: ";
-                print_set("", difference);
-            } else
-                std::cout << std::endl; 
+
+            std::vector<long> false_positives;
+            std::set_difference(result.begin(), result.end(),
+                expected.begin(), expected.end(),
+                std::back_inserter(false_positives));
+            if (false_positives.size() > 0) {
+                std::cout << "; " << false_positives.size() << " False positives: ";
+                print_set("", false_positives);
+            }
+
+            std::vector<long> false_negatives;
+            std::set_difference(expected.begin(), expected.end(),
+                result.begin(), result.end(),
+                std::back_inserter(false_negatives));
+            if (false_negatives.size() > 0) {
+                std::cout << "; " << false_negatives.size() << " False negatives: ";
+                print_set("", false_negatives);
+            }
+            if (false_positives.size() == 0 && false_negatives.size() == 0) 
+                std::cout << std::endl;
+
             client_prep_times.push_back(static_cast<long>(client_prep_time));
             client_online_times.push_back(static_cast<long>(client_online_time));
             server_prep_times.push_back(static_cast<long>(server_prep_time));

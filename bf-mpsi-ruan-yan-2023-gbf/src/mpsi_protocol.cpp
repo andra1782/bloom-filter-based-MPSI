@@ -69,8 +69,12 @@ std::vector<long> multiparty_psi(
         start = high_resolution_clock::now();
         Ciphertext c_j = w_js[j];
         for (const auto& erbf : all_erbfs) {
+            std::unordered_set<size_t> visited_bins;
             for (uint64_t seed : bf_params.seeds) {
                 size_t idx = hash_element(server_set[j], seed) % bf_params.bin_count;
+                if (visited_bins.count(idx) > 0) 
+                    continue;
+                visited_bins.insert(idx);
                 c_j.c1 = MulMod(c_j.c1, erbf[idx].c1, keys.params.p);
                 c_j.c2 = MulMod(c_j.c2, erbf[idx].c2, keys.params.p);
             }

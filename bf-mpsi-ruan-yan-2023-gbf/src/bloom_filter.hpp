@@ -2,6 +2,9 @@
 #define BLOOM_FILTER_HPP
 
 #include <vector>
+#include <unordered_set>
+#include <cmath>
+#include <algorithm>
 #include <cstdint>
 #include <cstddef> 
 #include <NTL/ZZ.h>

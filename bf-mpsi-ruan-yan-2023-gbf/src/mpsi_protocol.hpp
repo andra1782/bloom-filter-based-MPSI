@@ -2,6 +2,7 @@
 #define MPSI_PROTOCOL_HPP
 
 #include <vector>
+#include <unordered_set>
 #include <NTL/ZZ.h>
 #include "el_gamal.hpp"
 #include "bloom_filter.hpp"

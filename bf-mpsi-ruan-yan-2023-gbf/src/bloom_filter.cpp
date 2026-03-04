@@ -1,7 +1,4 @@
 #include "bloom_filter.hpp"
-#include <cmath>
-#include <algorithm>
-#include <vector>
 
 #define XXH_INLINE_ALL
 #include "xxhash.h"
@@ -69,12 +66,17 @@ ZZ GarbledBloomFilter::generate_random_share() const {
 
 bool GarbledBloomFilter::insert_set(const std::vector<long>& elements) {
     size_t bin_count = bins.size();
+    bool allInserted = true;
     for(size_t element : elements) {
         long emptySlot = -1;
         ZZ finalShare = to_ZZ(1); // all shares 1 mod p
+        std::unordered_set<size_t> visited_bins;
 
         for (uint64_t seed : seeds) {
             size_t j = hash_element(element, seed) % bin_count;
+            if(visited_bins.count(j) > 0) 
+                continue;
+            visited_bins.insert(j);
             
             if (bins[j] == to_ZZ(0)) {
                 if (emptySlot == -1) {
@@ -89,9 +91,11 @@ bool GarbledBloomFilter::insert_set(const std::vector<long>& elements) {
             }
         }
 
-        if (emptySlot == -1) 
-            return false; 
-        bins[emptySlot] = finalShare;
+        if (emptySlot == -1) {
+            allInserted = false; // no empty slot found for this element, cannot insert
+            std::cerr << "An element could not be inserted into the Garbled Bloom Filter." << std::endl;
+        } else 
+            bins[emptySlot] = finalShare;
     }
 
      for (size_t i = 0; i < bins.size(); ++i) {
@@ -99,18 +103,22 @@ bool GarbledBloomFilter::insert_set(const std::vector<long>& elements) {
             bins[i] = generate_random_share();
         }
     }
-    return true;
+    return allInserted;
 }
 
 bool GarbledBloomFilter::contains(const size_t& element) const {
     size_t bin_count = bins.size();
     ZZ recovered = to_ZZ(1); 
+    std::unordered_set<size_t> visited_bins;
     
     for (uint64_t seed : seeds) {
         size_t j = hash_element(element, seed) % bin_count;
+        if (visited_bins.count(j) > 0) 
+            continue;
+        visited_bins.insert(j);
+        
         recovered = MulMod(recovered, bins[j], p);
     }
-    
     return recovered == to_ZZ(1);
 }
 
