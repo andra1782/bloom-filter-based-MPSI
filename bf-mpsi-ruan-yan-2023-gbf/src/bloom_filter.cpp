@@ -66,8 +66,8 @@ ZZ GarbledBloomFilter::generate_random_share() const {
 
 bool GarbledBloomFilter::insert_set(const std::vector<long>& elements) {
     size_t bin_count = bins.size();
-    bool allInserted = true;
-    for(size_t element : elements) {
+    int elements_not_inserted = 0;
+    for (size_t element : elements) {
         long emptySlot = -1;
         ZZ finalShare = to_ZZ(1); // all shares 1 mod p
         std::unordered_set<size_t> visited_bins;
@@ -91,10 +91,9 @@ bool GarbledBloomFilter::insert_set(const std::vector<long>& elements) {
             }
         }
 
-        if (emptySlot == -1) {
-            allInserted = false; // no empty slot found for this element, cannot insert
-            std::cerr << "An element could not be inserted into the Garbled Bloom Filter." << std::endl;
-        } else 
+        if (emptySlot == -1) 
+            elements_not_inserted++;
+        else 
             bins[emptySlot] = finalShare;
     }
 
@@ -103,7 +102,11 @@ bool GarbledBloomFilter::insert_set(const std::vector<long>& elements) {
             bins[i] = generate_random_share();
         }
     }
-    return allInserted;
+    if(elements_not_inserted > 0) {
+        // std::cerr << elements_not_inserted << " elements could not be inserted into the Garbled Bloom Filter." << std::endl;
+        return false;
+    }
+    return true;
 }
 
 bool GarbledBloomFilter::contains(const size_t& element) const {
