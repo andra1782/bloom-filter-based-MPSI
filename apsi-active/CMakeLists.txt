@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(apsi1 LANGUAGES CXX)
+project(apsi_active LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -15,7 +15,7 @@ endif()
 
 file(GLOB SOURCES CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/*.cpp)
 
-add_executable(apsi1 ${SOURCES})
+add_executable(apsi_active ${SOURCES})
 
 find_path(NTL_INCLUDE_DIR NTL/ZZ.h)
 find_library(NTL_LIBRARY ntl)
@@ -26,8 +26,8 @@ else()
 	message(FATAL_ERROR "Could not find NTL.")
 endif()
 
-target_include_directories(apsi1 PRIVATE ${CMAKE_SOURCE_DIR}/src ${NTL_INCLUDE_DIR})
+target_include_directories(apsi_active PRIVATE ${CMAKE_SOURCE_DIR}/src ${NTL_INCLUDE_DIR})
 
-target_link_libraries(apsi1 PRIVATE ${NTL_LIBRARY})
+target_link_libraries(apsi_active PRIVATE ${NTL_LIBRARY})
 
-install(TARGETS apsi1 RUNTIME DESTINATION bin)
+install(TARGETS apsi_active RUNTIME DESTINATION bin)

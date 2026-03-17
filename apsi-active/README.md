@@ -8,10 +8,10 @@ sudo apt install build-essential cmake libgmp-dev libntl-dev
 ```
 
 ```
-cd apsi-variant1/
+cd apsi-active/
 mkdir build
 cd build
 cmake ..
 cmake --build . --config Release
-./apsi1
+./apsi_active
 ```
