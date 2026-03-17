@@ -71,24 +71,29 @@ void generate_clients_and_server_sets(
     size_t set_size_clients,
     long set_size_server,
     long universe_size,
+    long forced_intersection_size,
     std::vector<std::vector<long>>& client_sets,
     std::vector<long>& server_set
 ) {
+    std::vector<long> intersection = sample_set(forced_intersection_size, universe_size);
+
     client_sets.clear();
     for (long i = 0; i < n_clients; ++i) {
-        std::vector<long> client_set = sample_set(set_size_clients, universe_size);
+        std::vector<long> client_set = sample_set(set_size_clients  - intersection.size(), universe_size);
+        client_set.insert(client_set.end(), intersection.begin(), intersection.end());
         std::sort(client_set.begin(), client_set.end());
         client_sets.push_back(client_set);
     }
 
     server_set.clear();
-    server_set = sample_set(set_size_server, universe_size);
+    server_set = sample_set(set_size_server - intersection.size(), universe_size);
+    server_set.insert(server_set.end(), intersection.begin(), intersection.end());
     std::sort(server_set.begin(), server_set.end());
 }
 
 void benchmark(long repetitions, std::vector<long> number_of_parties_list, long set_size_clients, long set_size_server, int false_positive_exponent=-30) {
-    long domain_size = static_cast<long>(std::ceil(set_size_server * 1.25));
-    // long domain_size = set_size_server * 1000;
+    long long domain_size = (1LL << 32) - 1;
+    long forced_intersection_size = set_size_clients / 4;
 
     for (long t : number_of_parties_list) {
         // Generate data
@@ -97,7 +102,8 @@ void benchmark(long repetitions, std::vector<long> number_of_parties_list, long 
         for (int i = 0; i < repetitions; ++i) {
             std::vector<std::vector<long>> client_sets;
             std::vector<long> server_set;
-            generate_clients_and_server_sets(t - 1, set_size_clients, set_size_server, domain_size, client_sets, server_set);
+            generate_clients_and_server_sets(t - 1, set_size_clients, set_size_server, 
+                domain_size, forced_intersection_size, client_sets, server_set);
             experiment_client_sets.push_back(client_sets);
             experiment_server_sets.push_back(server_set);
         }
