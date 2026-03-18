@@ -10,7 +10,8 @@ std::vector<long> multiparty_psi(
     const std::vector<long>& server_set,
     BloomFilterParams& bf_params,
     const Keys& keys,
-    double* client_computation_time,
+    double* client_prep_time,
+    double* client_online_time,
     double* server_computation_time,
     double* judge_computation_time,
     size_t* server_sent_bytes, 
@@ -45,7 +46,7 @@ std::vector<long> multiparty_psi(
         all_erbfs_size_bytes += erbf_size_bytes;
     }
     auto stop = high_resolution_clock::now();
-    *client_computation_time = duration<double, std::milli>(stop - start).count() / n_clients;
+    *client_prep_time = duration<double, std::milli>(stop - start).count() / n_clients;
 
     // Server sends their elements to the Judge
     *server_sent_bytes += server_set.size() * sizeof(long);
@@ -101,7 +102,7 @@ std::vector<long> multiparty_psi(
         }
     }
     auto stop_client = high_resolution_clock::now();
-    *client_computation_time += duration<double, std::milli>(stop_client - start_client).count() / n_clients;
+    *client_online_time += duration<double, std::milli>(stop_client - start_client).count() / n_clients;
 
     // Clients send their ciphertexts to the Judge
     size_t ciphertext_size_bytes = 0;

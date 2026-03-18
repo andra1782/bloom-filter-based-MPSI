@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <random>
 #include <unistd.h>
+#include <fstream>
+#include <filesystem>
 #include "mpsi_protocol.hpp" 
 #include "experiments.hpp"
 
@@ -71,24 +73,39 @@ void generate_clients_and_server_sets(
     size_t set_size_clients,
     long set_size_server,
     long universe_size,
+    long forced_intersection_size,
     std::vector<std::vector<long>>& client_sets,
     std::vector<long>& server_set
 ) {
+    std::vector<long> intersection = sample_set(forced_intersection_size, universe_size);
+
     client_sets.clear();
     for (long i = 0; i < n_clients; ++i) {
-        std::vector<long> client_set = sample_set(set_size_clients, universe_size);
+        std::vector<long> client_set = sample_set(set_size_clients  - intersection.size(), universe_size);
+        client_set.insert(client_set.end(), intersection.begin(), intersection.end());
         std::sort(client_set.begin(), client_set.end());
         client_sets.push_back(client_set);
     }
 
     server_set.clear();
-    server_set = sample_set(set_size_server, universe_size);
+    server_set = sample_set(set_size_server - intersection.size(), universe_size);
+    server_set.insert(server_set.end(), intersection.begin(), intersection.end());
     std::sort(server_set.begin(), server_set.end());
 }
 
 void benchmark(long repetitions, std::vector<long> number_of_parties_list, long set_size_clients, long set_size_server, int false_positive_exponent=-30) {
-    long domain_size = static_cast<long>(std::ceil(set_size_server * 1.25));
-    // long domain_size = set_size_server * 1000;
+    long long domain_size = (1LL << 32) - 1;
+    long forced_intersection_size = set_size_clients / 4;
+
+    std::filesystem::create_directory("../data"); 
+    std::ofstream comp_csv("../data/computation.csv");
+    comp_csv << "Parties,Client Prep,Client Online,Server Prep,Server Online\n";
+    std::ofstream comm_csv("../data/communication.csv");
+    comm_csv << "Parties,Client Sent,Client Received,Server Sent,Server Received\n";
+    std::ofstream sim_csv("../data/simulation.csv");
+    sim_csv << "Parties,LAN (2.5 GBps),125 MBps,25 MBps,6.25 MBps,625 KBps\n";
+    std::ofstream fp_csv("../data/false_positives.csv");
+    fp_csv << "Parties,R1,R2,R3,R4,R5,R6,R7,R8,R9,R10\n";
 
     for (long t : number_of_parties_list) {
         // Generate data
@@ -97,7 +114,8 @@ void benchmark(long repetitions, std::vector<long> number_of_parties_list, long 
         for (int i = 0; i < repetitions; ++i) {
             std::vector<std::vector<long>> client_sets;
             std::vector<long> server_set;
-            generate_clients_and_server_sets(t - 1, set_size_clients, set_size_server, domain_size, client_sets, server_set);
+            generate_clients_and_server_sets(t - 1, set_size_clients, set_size_server, 
+                domain_size, forced_intersection_size, client_sets, server_set);
             experiment_client_sets.push_back(client_sets);
             experiment_server_sets.push_back(server_set);
         }
@@ -111,6 +129,7 @@ void benchmark(long repetitions, std::vector<long> number_of_parties_list, long 
         std::cout << "Set size clients " << set_size_clients << ", Set size server " << set_size_server;
         std::cout << ", Domain size " << domain_size;
         std::cout << ", Params: m=" << params.bin_count << ", k=" << params.seeds.size() << std::endl;
+        fp_csv << t;
 
         std::vector<long> client_prep_times;
         std::vector<long> client_online_times;
@@ -150,16 +169,22 @@ void benchmark(long repetitions, std::vector<long> number_of_parties_list, long 
                 experiment_client_sets[i], 
                 experiment_server_sets[i]
             );
+
             std::cout << "Expected size: " << expected.size() << ", MPSI size: " << result.size();
+            long fp_count = result.size() - expected.size();
+            fp_csv << "," << fp_count;
+
             if (result != expected) {
                 std::vector<long> difference;
                 std::set_difference(result.begin(), result.end(),
                     expected.begin(), expected.end(),
                     std::back_inserter(difference));
-                std::cout << "; " << result.size() - expected.size() << " False positives";
+                std::cout << "; " << fp_count << " False positives";
                 print_set("", difference);
-            } else
+            } else {
                 std::cout << std::endl; 
+            }
+
             client_prep_times.push_back(static_cast<long>(client_prep_time));
             client_online_times.push_back(static_cast<long>(client_online_time));
             server_prep_times.push_back(static_cast<long>(server_prep_time));
@@ -169,6 +194,7 @@ void benchmark(long repetitions, std::vector<long> number_of_parties_list, long 
             client_sent_bytes_all.push_back(client_sent_bytes);
             client_received_bytes_all.push_back(client_received_bytes);
         }
+        fp_csv << "\n";
 
         double mean_client_prep = sample_mean_computation(client_prep_times);
         double std_dev = sample_std_computation(client_prep_times, mean_client_prep);
@@ -201,6 +227,18 @@ void benchmark(long repetitions, std::vector<long> number_of_parties_list, long 
         double mean_client_received = sample_mean_communication(client_received_bytes_all);
         std_dev = sample_std_communication(client_received_bytes_all, mean_client_received);
         std::cout << "Client received bytes: mean " << std::fixed << mean_client_received << ", std dev " << std_dev << std::endl;
+        
+        comp_csv << t << "," 
+                << mean_client_prep << ","  
+                << mean_client_online << "," 
+                << mean_server_prep << "," 
+                << mean_server_online << "\n";
+
+        comm_csv << t << "," 
+                << mean_client_sent << "," 
+                << mean_client_received << ","
+                << mean_server_sent << "," 
+                << mean_server_received << "\n";
 
         // Network Simulation 
         size_t bandwidth_lan = 2500000000; // 2.5 GBps
@@ -236,5 +274,12 @@ void benchmark(long repetitions, std::vector<long> number_of_parties_list, long 
         std::cout << "Banwidth 25 MBps, Latency " << time_network_1 << " ms (200 Mbps)" << std::endl;
         std::cout << "Banwidth 6.25 MBps, Latency " << time_network_2 << " ms (20 Mbps)" << std::endl;
         std::cout << "Banwidth 625 KBps, Latency " << time_network_3 << " ms (5 Mbps)" << std::endl;
+    
+        sim_csv << t << "," 
+            << time_lan << "," 
+            << time_network_0 << "," 
+            << time_network_1 << ","
+            << time_network_2 << "," 
+            << time_network_3 << "\n";
     }
 }

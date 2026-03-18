@@ -66,7 +66,8 @@ std::vector<long> run_experiment(const std::vector<std::vector<long>>& client_se
               << ", m=" << global_params.bin_count 
               << ", k=" << global_params.seeds.size() << std::endl;
 
-    double client_computation_time = 0.0;
+    double client_prep_time = 0.0;
+    double client_online_time = 0.0;
     double server_computation_time = 0.0;
     double judge_computation_time = 0.0;
     size_t server_sent_bytes = 0;
@@ -81,7 +82,8 @@ std::vector<long> run_experiment(const std::vector<std::vector<long>>& client_se
         server_set, 
         global_params,
         keys,
-        &client_computation_time,
+        &client_prep_time,
+        &client_online_time,
         &server_computation_time,
         &judge_computation_time,
         &server_sent_bytes,
@@ -94,7 +96,8 @@ std::vector<long> run_experiment(const std::vector<std::vector<long>>& client_se
     std::cout << "Result: ";
     print_set("MPSI", result);
 
-    std::cout << "Client computation time: " << client_computation_time << " ms";
+    std::cout << "Client prep time: " << client_prep_time << " ms";
+    std::cout << ", Client online time: " << client_online_time << " ms";
     std::cout << ", Server computation time: " << server_computation_time << " ms";
     std::cout << ", Judge computation time: " << judge_computation_time << " ms";
     std::cout << "Server sent bytes: " << server_sent_bytes;
