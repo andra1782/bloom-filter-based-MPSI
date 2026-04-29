@@ -11,6 +11,8 @@ std::vector<long> multiparty_psi(
     const std::vector<long>& server_set,
     BloomFilterParams& bf_params,
     const Keys& keys,
+    const mcl::bn::G2& judge_pk, 
+    const mcl::bn::Fr& judge_sk, 
     double* client_prep_time,
     double* client_online_time,
     double* server_computation_time,

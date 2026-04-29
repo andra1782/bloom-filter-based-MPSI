@@ -68,6 +68,31 @@ double sample_std_communication(const std::vector<size_t>& measurements, double 
     return std::sqrt(sum / (measurements.size() - 1.0));
 }
 
+GT setup_pairings() {
+    initPairing(); 
+
+    // generator in G2
+    G2 g2_gen;
+    mapToG2(g2_gen, 1);
+
+    // deterministic point in G1
+    G1 g1_gen;
+    Fp t;
+    t.setHashOf("mpsi_base_generator");
+    mapToG1(g1_gen, t);
+
+    GT base_gt;
+    pairing(base_gt, g1_gen, g2_gen);
+    return base_gt;
+}
+
+void setup_judge_keys(mcl::bn::G2& judge_pk, mcl::bn::Fr& judge_sk) {
+    judge_sk.setByCSPRNG();
+    mcl::bn::G2 g2_gen;
+    mapToG2(g2_gen, 1);
+    mcl::bn::G2::mul(judge_pk, g2_gen, judge_sk);
+}
+
 void generate_clients_and_server_sets(
     long n_clients,
     size_t set_size_clients,
@@ -120,10 +145,14 @@ void benchmark(long repetitions, std::vector<long> number_of_parties_list, long 
             experiment_server_sets.push_back(server_set);
         }
 
-        BloomFilterParams params(set_size_clients, false_positive_exponent); 
+        // setup keys and params
         Keys keys;
-        // threshold t, parties n = t.
-        key_gen(&keys, 1024, t, t); 
+        key_gen(&keys, 1024, t, t); // threshold t, parties n = t.
+        GT base_gt = setup_pairings();
+        BloomFilterParams params(set_size_clients, false_positive_exponent, keys.params.p, base_gt); 
+        mcl::bn::G2 judge_pk;
+        mcl::bn::Fr judge_sk;
+        setup_judge_keys(judge_pk, judge_sk);
 
         std::cout << "\nBenchmarking " << t << " parties, ";
         std::cout << "Set size clients " << set_size_clients << ", Set size server " << set_size_server;
@@ -159,6 +188,8 @@ void benchmark(long repetitions, std::vector<long> number_of_parties_list, long 
                 experiment_server_sets[i], 
                 params, 
                 keys,
+                judge_pk,
+                judge_sk,
                 &client_prep_time,
                 &client_online_time,
                 &server_computation_time,

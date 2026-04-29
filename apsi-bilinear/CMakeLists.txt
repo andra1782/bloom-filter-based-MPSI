@@ -13,6 +13,15 @@ if(NOT EXISTS "${CMAKE_SOURCE_DIR}/src/xxhash.h")
 	)
 endif()
 
+include(FetchContent)
+message(STATUS "Fetching the MCL library...")
+FetchContent_Declare(
+    mcl
+    GIT_REPOSITORY https://github.com/herumi/mcl.git
+    GIT_TAG master
+)
+FetchContent_MakeAvailable(mcl)
+
 file(GLOB SOURCES CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/*.cpp)
 
 add_executable(apsi_bilinear ${SOURCES})
@@ -26,8 +35,15 @@ else()
 	message(FATAL_ERROR "Could not find NTL.")
 endif()
 
-target_include_directories(apsi_bilinear PRIVATE ${CMAKE_SOURCE_DIR}/src ${NTL_INCLUDE_DIR})
+target_include_directories(apsi_bilinear PRIVATE 
+	${CMAKE_SOURCE_DIR}/src
+	${NTL_INCLUDE_DIR} 
+	${CMAKE_BINARY_DIR}/_deps/mcl-src/include
+)
 
-target_link_libraries(apsi_bilinear PRIVATE ${NTL_LIBRARY})
+target_link_libraries(apsi_bilinear PRIVATE 
+	${NTL_LIBRARY} 
+	mcl
+)
 
 install(TARGETS apsi_bilinear RUNTIME DESTINATION bin)

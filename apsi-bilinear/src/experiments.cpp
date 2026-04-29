@@ -54,12 +54,15 @@ std::vector<long> run_experiment(const std::vector<std::vector<long>>& client_se
             max_set_size = set.size();
     }
 
-    BloomFilterParams global_params(max_set_size, -10);
-
     Keys keys;
     // t = clients + 1 (server)
     int t = client_sets.size() + 1;
     key_gen(&keys, 1024, t, t); 
+    GT base_gt = setup_pairings();
+    BloomFilterParams global_params(max_set_size, -10, keys.params.p, base_gt);
+    mcl::bn::G2 judge_pk;
+    mcl::bn::Fr judge_sk;
+    setup_judge_keys(judge_pk, judge_sk);
 
     std::cout << "Params: " << "t=" << t
               << ", n=" << max_set_size 
@@ -82,6 +85,8 @@ std::vector<long> run_experiment(const std::vector<std::vector<long>>& client_se
         server_set, 
         global_params,
         keys,
+        judge_pk,
+        judge_sk,
         &client_prep_time,
         &client_online_time,
         &server_computation_time,
