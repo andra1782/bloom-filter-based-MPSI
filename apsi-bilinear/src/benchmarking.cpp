@@ -318,11 +318,11 @@ void benchmark(long repetitions, std::vector<long> number_of_parties_list, long 
         double time_network_3 = calc_net_time(LATENCY_WAN, bandwidth_3);
 
         std::cout << "\nSimulated Total Times (Communication + Computation):" << std::endl;
-        std::cout << "Banwidth 2.5 GBps, Latency " << time_lan << " ms (LAN)" << std::endl; 
-        std::cout << "Banwidth 125 MBps, Latency " << time_network_0 << " ms (1 Gbps)" << std::endl;
-        std::cout << "Banwidth 25 MBps, Latency " << time_network_1 << " ms (200 Mbps)" << std::endl;
-        std::cout << "Banwidth 6.25 MBps, Latency " << time_network_2 << " ms (20 Mbps)" << std::endl;
-        std::cout << "Banwidth 625 KBps, Latency " << time_network_3 << " ms (5 Mbps)" << std::endl;
+        std::cout << "Bandwidth 2.5 GBps, Latency " << time_lan << " ms (LAN)" << std::endl; 
+        std::cout << "Bandwidth 125 MBps, Latency " << time_network_0 << " ms (1 Gbps)" << std::endl;
+        std::cout << "Bandwidth 25 MBps, Latency " << time_network_1 << " ms (200 Mbps)" << std::endl;
+        std::cout << "Bandwidth 6.25 MBps, Latency " << time_network_2 << " ms (20 Mbps)" << std::endl;
+        std::cout << "Bandwidth 625 KBps, Latency " << time_network_3 << " ms (5 Mbps)" << std::endl;
 
         sim_csv << t << "," 
                 << time_lan << "," 
