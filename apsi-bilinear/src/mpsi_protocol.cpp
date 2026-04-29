@@ -132,7 +132,8 @@ std::vector<long> multiparty_psi(
     size_t* server_sent_bytes, 
     size_t* server_received_bytes,
     size_t* client_sent_bytes,
-    size_t* client_received_bytes,
+    size_t* leader_client_sent_bytes,
+    size_t* leader_client_received_bytes,
     size_t* judge_sent_bytes,
     size_t* judge_received_bytes
 ) {
@@ -192,7 +193,7 @@ std::vector<long> multiparty_psi(
     }
     if (n_clients > 1) {
         *client_sent_bytes += total_gbf_and_s_values_bytes / (n_clients - 1);
-        *client_received_bytes += total_gbf_and_s_values_bytes / (n_clients - 1);
+        *leader_client_received_bytes += total_gbf_and_s_values_bytes;
     }
     
     // The leader client aggregates the S values and GBFs
@@ -211,7 +212,7 @@ std::vector<long> multiparty_psi(
         *client_sent_bytes += get_element_size(bin);
         *server_received_bytes += get_element_size(bin);
     }
-    *client_sent_bytes += get_element_size(S_agg);
+    *leader_client_sent_bytes += get_element_size(S_agg);
     *server_received_bytes += get_element_size(S_agg);
 
     // The server computes the intersection

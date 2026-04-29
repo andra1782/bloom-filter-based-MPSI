@@ -126,7 +126,7 @@ void benchmark(long repetitions, std::vector<long> number_of_parties_list, long 
     std::ofstream comp_csv("../data/computation.csv");
     comp_csv << "Parties,Client Prep,Client Online,Server,Judge\n";
     std::ofstream comm_csv("../data/communication.csv");
-    comm_csv << "Parties,Client Sent,Client Received,Server Sent,Server Received,Judge Sent,Judge Received\n";
+    comm_csv << "Parties,Client Sent,Leader Client Sent,LeaderClient Received,Server Sent,Server Received,Judge Sent,Judge Received\n";
     std::ofstream sim_csv("../data/simulation.csv");
     sim_csv << "Parties,LAN (2.5 GBps),125 MBps,25 MBps,6.25 MBps,625 KBps\n";
     std::ofstream fp_csv("../data/false_positives.csv");
@@ -167,7 +167,8 @@ void benchmark(long repetitions, std::vector<long> number_of_parties_list, long 
         std::vector<size_t> server_sent_bytes_all;
         std::vector<size_t> server_received_bytes_all;
         std::vector<size_t> client_sent_bytes_all;
-        std::vector<size_t> client_received_bytes_all;
+        std::vector<size_t> leader_client_sent_bytes_all;
+        std::vector<size_t> leader_client_received_bytes_all;
         std::vector<size_t> judge_sent_bytes_all;
         std::vector<size_t> judge_received_bytes_all;
 
@@ -179,7 +180,8 @@ void benchmark(long repetitions, std::vector<long> number_of_parties_list, long 
             size_t server_sent_bytes = 0;
             size_t server_received_bytes = 0;
             size_t client_sent_bytes = 0;
-            size_t client_received_bytes = 0;
+            size_t leader_client_sent_bytes = 0;
+            size_t leader_client_received_bytes = 0;
             size_t judge_sent_bytes = 0;
             size_t judge_received_bytes = 0;
 
@@ -197,7 +199,8 @@ void benchmark(long repetitions, std::vector<long> number_of_parties_list, long 
                 &server_sent_bytes,
                 &server_received_bytes,
                 &client_sent_bytes,
-                &client_received_bytes,
+                &leader_client_sent_bytes,
+                &leader_client_received_bytes,
                 &judge_sent_bytes,
                 &judge_received_bytes
             );
@@ -229,7 +232,8 @@ void benchmark(long repetitions, std::vector<long> number_of_parties_list, long 
             server_sent_bytes_all.push_back(server_sent_bytes);
             server_received_bytes_all.push_back(server_received_bytes);
             client_sent_bytes_all.push_back(client_sent_bytes);
-            client_received_bytes_all.push_back(client_received_bytes);
+            leader_client_sent_bytes_all.push_back(leader_client_sent_bytes);
+            leader_client_received_bytes_all.push_back(leader_client_received_bytes);
             judge_sent_bytes_all.push_back(judge_sent_bytes);
             judge_received_bytes_all.push_back(judge_received_bytes);
         }
@@ -263,9 +267,13 @@ void benchmark(long repetitions, std::vector<long> number_of_parties_list, long 
         std_dev = sample_std_communication(client_sent_bytes_all, mean_client_sent);
         std::cout << "Client sent bytes: mean " << std::fixed << mean_client_sent << ", std dev " << std_dev << std::endl;
 
-        double mean_client_received = sample_mean_communication(client_received_bytes_all);
-        std_dev = sample_std_communication(client_received_bytes_all, mean_client_received);
-        std::cout << "Client received bytes: mean " << std::fixed << mean_client_received << ", std dev " << std_dev << std::endl;
+        double mean_leader_client_sent = sample_mean_communication(leader_client_sent_bytes_all);
+        std_dev = sample_std_communication(leader_client_sent_bytes_all, mean_leader_client_sent);
+        std::cout << "Leader Client sent bytes: mean " << std::fixed << mean_leader_client_sent << ", std dev " << std_dev << std::endl;
+
+        double mean_leader_client_received = sample_mean_communication(leader_client_received_bytes_all);
+        std_dev = sample_std_communication(leader_client_received_bytes_all, mean_leader_client_received);
+        std::cout << "Leader Client received bytes: mean " << std::fixed << mean_leader_client_received << ", std dev " << std_dev << std::endl;
 
         double mean_judge_sent = sample_mean_communication(judge_sent_bytes_all);
         std_dev = sample_std_communication(judge_sent_bytes_all, mean_judge_sent);
@@ -283,7 +291,8 @@ void benchmark(long repetitions, std::vector<long> number_of_parties_list, long 
 
         comm_csv << t << "," 
                 << mean_client_sent << "," 
-                << mean_client_received << ","
+                << mean_leader_client_sent << "," 
+                << mean_leader_client_received << "," 
                 << mean_server_sent << "," 
                 << mean_server_received << ","
                 << mean_judge_sent << "," 
@@ -301,7 +310,7 @@ void benchmark(long repetitions, std::vector<long> number_of_parties_list, long 
         const size_t MESSAGES = 5;
 
         double total_comp_time = mean_client_prep + mean_client_online + mean_server_computation + mean_judge_computation;
-        double bandwidth_total_bytes = (mean_server_sent + mean_server_received + mean_client_sent + mean_client_received + mean_judge_sent + mean_judge_received) / 2;
+        double bandwidth_total_bytes = (mean_server_sent + mean_server_received + mean_client_sent + mean_leader_client_sent + mean_leader_client_received + mean_judge_sent + mean_judge_received) / 2;
         std::cout << "\nTotal Computation Time (ms): " << total_comp_time << std::endl;
         std::cout << "Total Communication (bytes): " << bandwidth_total_bytes << std::endl;
 
@@ -310,7 +319,7 @@ void benchmark(long repetitions, std::vector<long> number_of_parties_list, long 
             return (latency_ms * MESSAGES) + (bandwidth_total_bytes / bandwidth_bps)  + total_comp_time;
         };
 
-        size_t messages = 2 * (t - 1) + 2;
+        size_t messages = t - 1 + 3; // 2 for authorize, t - 1 to send to leader, 1 leader to server
         size_t time_lan = calc_net_time(LATENCY_LAN, bandwidth_lan);
         double time_network_0 = calc_net_time(LATENCY_WAN, bandwidth_0);
         double time_network_1 = calc_net_time(LATENCY_WAN, bandwidth_1);

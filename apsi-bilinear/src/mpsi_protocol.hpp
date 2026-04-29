@@ -20,7 +20,8 @@ std::vector<long> multiparty_psi(
     size_t* server_sent_bytes, 
     size_t* server_received_bytes,
     size_t* client_sent_bytes,
-    size_t* client_received_bytes,
+    size_t* leader_client_sent_bytes,
+    size_t* leader_client_received_bytes,
     size_t* judge_sent_bytes,
     size_t* judge_received_bytes
 );

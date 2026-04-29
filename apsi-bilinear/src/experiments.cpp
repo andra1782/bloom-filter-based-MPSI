@@ -76,7 +76,8 @@ std::vector<long> run_experiment(const std::vector<std::vector<long>>& client_se
     size_t server_sent_bytes = 0;
     size_t server_received_bytes = 0;
     size_t client_sent_bytes = 0;
-    size_t client_received_bytes = 0;
+    size_t leader_client_sent_bytes = 0;
+    size_t leader_client_received_bytes = 0;
     size_t judge_sent_bytes = 0;
     size_t judge_received_bytes = 0;
 
@@ -94,7 +95,8 @@ std::vector<long> run_experiment(const std::vector<std::vector<long>>& client_se
         &server_sent_bytes,
         &server_received_bytes,
         &client_sent_bytes,
-        &client_received_bytes,
+        &leader_client_sent_bytes,
+        &leader_client_received_bytes,
         &judge_sent_bytes,
         &judge_received_bytes
     );
@@ -108,7 +110,8 @@ std::vector<long> run_experiment(const std::vector<std::vector<long>>& client_se
     std::cout << "Server sent bytes: " << server_sent_bytes;
     std::cout << ", Server received bytes: " << server_received_bytes;
     std::cout << ", Client sent bytes: " << client_sent_bytes;
-    std::cout << ", Client received bytes: " << client_received_bytes;
+    std::cout << ", Leader Client sent bytes: " << leader_client_sent_bytes;
+    std::cout << ", Leader Client received bytes: " << leader_client_received_bytes;
     std::cout << ", Judge sent bytes: " << judge_sent_bytes;
     std::cout << ", Judge received bytes: " << judge_received_bytes << std::endl;
     std::cout << std::endl;
