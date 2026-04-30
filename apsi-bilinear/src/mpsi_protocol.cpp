@@ -209,7 +209,7 @@ std::vector<long> multiparty_psi(
 
     // The leader client sends the aggregated S and GBFs to the server
     for (const auto& bin : aggregated_gbf) {
-        *client_sent_bytes += get_element_size(bin);
+        *leader_client_sent_bytes += get_element_size(bin);
         *server_received_bytes += get_element_size(bin);
     }
     *leader_client_sent_bytes += get_element_size(S_agg);

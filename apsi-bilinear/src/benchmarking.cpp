@@ -126,7 +126,7 @@ void benchmark(long repetitions, std::vector<long> number_of_parties_list, long 
     std::ofstream comp_csv("../data/computation.csv");
     comp_csv << "Parties,Client Prep,Client Online,Server,Judge\n";
     std::ofstream comm_csv("../data/communication.csv");
-    comm_csv << "Parties,Client Sent,Leader Client Sent,LeaderClient Received,Server Sent,Server Received,Judge Sent,Judge Received\n";
+    comm_csv << "Parties,Client Sent,Leader Client Sent,Leader Client Received,Server Sent,Server Received,Judge Sent,Judge Received\n";
     std::ofstream sim_csv("../data/simulation.csv");
     sim_csv << "Parties,LAN (2.5 GBps),125 MBps,25 MBps,6.25 MBps,625 KBps\n";
     std::ofstream fp_csv("../data/false_positives.csv");
