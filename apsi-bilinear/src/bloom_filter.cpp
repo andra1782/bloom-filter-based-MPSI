@@ -30,32 +30,6 @@ BloomFilterParams::BloomFilterParams(size_t element_count, int64_t e_pow, GT bas
     this->base_gt = base_gt; 
 }
 
-BloomFilter::BloomFilter(const BloomFilterParams& params) {
-    this->seeds = params.seeds;
-    this->bins.resize(params.bin_count, false);
-}
-
-void BloomFilter::insert(size_t element) {
-    size_t bin_count = bins.size();
-    for (uint64_t seed : seeds) {
-        bins[hash_element(element, seed) % bin_count] = true;
-    }
-}
-
-void BloomFilter::clear() {
-    std::fill(bins.begin(), bins.end(), false);
-}
-
-bool BloomFilter::contains(const size_t& element) const {
-    size_t bin_count = bins.size();
-    for (uint64_t seed : seeds) {
-        if (!bins[hash_element(element, seed) % bin_count]) {
-            return false;
-        }
-    }
-    return true;
-}
-
 GarbledBloomFilter::GarbledBloomFilter(const BloomFilterParams& params) {
     this->seeds = params.seeds;
     this->bins.resize(params.bin_count);
