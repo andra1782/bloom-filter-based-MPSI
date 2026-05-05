@@ -2,6 +2,7 @@
 #define EXPERIMENTS_HPP
 
 #include <vector>
+#include "mpsi_protocol.hpp" 
 
 void print_set(const std::string& name, const std::vector<long>& set);
 std::vector<long> compute_intersection_non_private(const std::vector<std::vector<long>>& client_sets, 

@@ -1,7 +1,4 @@
 #include "bloom_filter.hpp"
-#include <cmath>
-#include <algorithm>
-#include <vector>
 
 #define XXH_INLINE_ALL
 #include "xxhash.h"
@@ -14,7 +11,7 @@ size_t hash_element(const size_t& element, uint64_t seed) {
     return static_cast<size_t>(hash);
 }
 
-BloomFilterParams::BloomFilterParams(size_t element_count, int64_t e_pow, ZZ p, GT base_gt) {
+BloomFilterParams::BloomFilterParams(size_t element_count, int64_t e_pow, GT base_gt) {
     // k = - ln(epsilon) / ln(2), since epsilon = 2^e_pow, k = -e_pow
     size_t hash_count = static_cast<size_t>(-e_pow);
 
@@ -30,7 +27,6 @@ BloomFilterParams::BloomFilterParams(size_t element_count, int64_t e_pow, ZZ p, 
     for(size_t i = 0; i < hash_count; ++i) {
         this->seeds.push_back(static_cast<uint64_t>(rand()) + 1); 
     }
-    this->p = p;
     this->base_gt = base_gt; 
 }
 
@@ -64,7 +60,6 @@ GarbledBloomFilter::GarbledBloomFilter(const BloomFilterParams& params) {
     this->seeds = params.seeds;
     this->bins.resize(params.bin_count);
     this->is_empty.resize(params.bin_count, true);
-    this->p = params.p;
     this->base_gt = params.base_gt;
 }
 

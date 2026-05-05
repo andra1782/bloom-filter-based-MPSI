@@ -1,11 +1,9 @@
 #include "benchmarking.hpp" 
 #include <iostream>
-#include <vector>
 #include <chrono>
 #include <cmath>
 #include <algorithm>
 #include <random>
-#include "mpsi_protocol.hpp" 
 
 void print_set(const std::string& name, const std::vector<long>& set) {
     std::cout << name << ": { ";
@@ -54,12 +52,10 @@ std::vector<long> run_experiment(const std::vector<std::vector<long>>& client_se
             max_set_size = set.size();
     }
 
-    Keys keys;
     // t = clients + 1 (server)
     int t = client_sets.size() + 1;
-    key_gen(&keys, 1024, t, t); 
     GT base_gt = setup_pairings();
-    BloomFilterParams global_params(max_set_size, -10, keys.params.p, base_gt);
+    BloomFilterParams global_params(max_set_size, -10, base_gt);
     mcl::bn::G2 judge_pk;
     mcl::bn::Fr judge_sk;
     setup_judge_keys(judge_pk, judge_sk);
@@ -85,7 +81,6 @@ std::vector<long> run_experiment(const std::vector<std::vector<long>>& client_se
         client_sets, 
         server_set, 
         global_params,
-        keys,
         judge_pk,
         judge_sk,
         &client_prep_time,

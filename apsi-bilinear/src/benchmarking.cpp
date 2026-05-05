@@ -1,6 +1,5 @@
 #include "benchmarking.hpp" 
 #include <iostream>
-#include <vector>
 #include <chrono>
 #include <cmath>
 #include <algorithm>
@@ -8,8 +7,6 @@
 #include <unistd.h>
 #include <fstream>
 #include <filesystem>
-#include "mpsi_protocol.hpp" 
-#include "experiments.hpp"
 
 // https://github.com/jellevos/bitset_mpsi/blob/master/main.cpp
 std::vector<long> sample_set(long set_size, long domain_size) {
@@ -146,10 +143,8 @@ void benchmark(long repetitions, std::vector<long> number_of_parties_list, long 
         }
 
         // setup keys and params
-        Keys keys;
-        key_gen(&keys, 1024, t, t); // threshold t, parties n = t.
         GT base_gt = setup_pairings();
-        BloomFilterParams params(set_size_clients, false_positive_exponent, keys.params.p, base_gt); 
+        BloomFilterParams params(set_size_clients, false_positive_exponent, base_gt); 
         mcl::bn::G2 judge_pk;
         mcl::bn::Fr judge_sk;
         setup_judge_keys(judge_pk, judge_sk);
@@ -189,7 +184,6 @@ void benchmark(long repetitions, std::vector<long> number_of_parties_list, long 
                 experiment_client_sets[i], 
                 experiment_server_sets[i], 
                 params, 
-                keys,
                 judge_pk,
                 judge_sk,
                 &client_prep_time,

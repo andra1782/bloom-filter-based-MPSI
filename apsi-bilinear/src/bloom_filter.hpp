@@ -18,9 +18,8 @@ size_t hash_element(const size_t& element, uint64_t seed);
 struct BloomFilterParams {
     size_t bin_count;
     std::vector<uint64_t> seeds;
-    ZZ p;
     mcl::bn::GT base_gt;
-    BloomFilterParams(size_t element_count, int64_t e_pow, ZZ p, GT base_gt);
+    BloomFilterParams(size_t element_count, int64_t e_pow, GT base_gt);
 };
 
 struct BloomFilter {
@@ -45,7 +44,6 @@ struct GarbledBloomFilter {
     std::vector<mcl::bn::GT> bins;  // m bins
     std::vector<bool> is_empty; // m bins
     std::vector<uint64_t> seeds; // k hash functions
-    ZZ p;
     GT base_gt;
 
     explicit GarbledBloomFilter(const BloomFilterParams& params);

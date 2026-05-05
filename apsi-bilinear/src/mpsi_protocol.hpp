@@ -3,14 +3,12 @@
 
 #include <vector>
 #include <NTL/ZZ.h>
-#include "el_gamal.hpp"
 #include "bloom_filter.hpp"
 
 std::vector<long> multiparty_psi(
     const std::vector<std::vector<long>>& client_sets,
     const std::vector<long>& server_set,
     BloomFilterParams& bf_params,
-    const Keys& keys,
     const mcl::bn::G2& judge_pk, 
     const mcl::bn::Fr& judge_sk, 
     double* client_prep_time,
