@@ -18,7 +18,7 @@ message(STATUS "Fetching the MCL library...")
 FetchContent_Declare(
     mcl
     GIT_REPOSITORY https://github.com/herumi/mcl.git
-    GIT_TAG master
+    GIT_TAG v3.04
 )
 FetchContent_MakeAvailable(mcl)
 
