@@ -134,48 +134,23 @@ vector<G1> judge_sign(const vector<G1>& blind_xs, const Fr& judge_sk) {
     return signatures;
 }
 
-Fr oprf_request(const vector<long>& client_set, vector<G1>& oprf_requests) {
-    Fr t;
-    t.setHashOf(random_string(32));
-    oprf_requests.resize(client_set.size());
-    for (size_t i = 0; i < client_set.size(); i++) {
-        G1 h1_x = hash_to_G1(client_set[i]);
-        oprf_requests[i] = h1_x; // H1(x)
-        G1::mul(oprf_requests[i], oprf_requests[i], t); // H1(x)^t
-    }
-    return t;
-}
-
-void oprf_eval(const vector<G1>& oprf_requests, const Fr& server_r, vector<G1>& oprf_evals) {
-    oprf_evals.resize(oprf_requests.size());
-    for (size_t i = 0; i < oprf_requests.size(); i++) {
-        G1::mul(oprf_evals[i], oprf_requests[i], server_r); // H1(x)^{t*r}
-    }
-}
-
-void oprf_recover(const vector<G1>& oprf_evals, const Fr& t, vector<G1>& oprf_recovered) {
-    Fr inv_t;
-    Fr::inv(inv_t, t);
-    oprf_recovered.resize(oprf_evals.size());
-    for (size_t i = 0; i < oprf_evals.size(); i++) {
-        G1::mul(oprf_recovered[i], oprf_evals[i], inv_t); // H1(x)^r
-    }
-}
-
 GarbledBloomFilter compute_gbf(const vector<long>& set, 
-                                     const vector<G1>& oprf_elements, // H1(x)^r
                                      const BloomFilterParams& bf_params, 
+                                     const Fr& r,
                                      const Fr& s_i,
                                      const G2& pk) {
     vector<GT> targets;
     for (size_t i = 0; i < set.size(); i++) {
-        G1 h2_oprf = h2(oprf_elements[i]); // H2(H1(x)^r)
+        G1 h1_x = hash_to_G1(set[i]); // H1(x)
+        G1 h1_x_blinded;
+        G1::mul(h1_x_blinded, h1_x, r); //
+        G1 h2_result = h2(h1_x_blinded); // H2(H1(x)^r)
         
-        G1 h2_oprf_si;
-        G1::mul(h2_oprf_si, h2_oprf, s_i); 
+        G1 h2_si;
+        G1::mul(h2_si, h2_result, s_i); // H2(H1(x)^r)^{s_i}
         
         GT target;
-        pairing(target, h2_oprf_si, pk); // e(H2(H1(x)^r)^{s_i}, pk)
+        pairing(target, h2_si, pk); // e(H2(H1(x)^r)^{s_i}, pk)
         targets.push_back(target);
     }
 
@@ -306,64 +281,12 @@ std::vector<long> multiparty_psi(
 
 
     // Intersect Phase
-    // OPRF with the server to get H1(x)^r for each client element
-    vector<vector<G1>> clients_blinded_oprf_elements;
-    vector<long> all_oprf_requests_times;
-    vector<long> all_oprf_evals_times;
-    vector<long> all_oprf_recovers_times;
-    vector<size_t> all_oprf_request_sent_bytes;
-    vector<size_t> all_oprf_eval_sent_bytes;
-    vector<size_t> all_oprf_recover_sent_bytes;
-    for(const auto& client_set : client_sets) {
-        // Each client prepares the OPRF request (its blinded elements)
-        auto oprf_request_start = high_resolution_clock::now();
-        vector<G1> oprf_requests;
-        Fr t = oprf_request(client_set, oprf_requests);
-        auto oprf_request_stop = high_resolution_clock::now();
-        all_oprf_requests_times.push_back(duration<double, std::milli>(oprf_request_stop - oprf_request_start).count());
-
-        // Each client sends OPRF request to server
-        size_t oprf_request_bytes = 0;
-        for (const auto& req : oprf_requests) 
-            oprf_request_bytes += get_element_size(req);
-        all_oprf_request_sent_bytes.push_back(oprf_request_bytes);
-
-        // Server blinds the client's OPRF request with r and sends it back
-        auto oprf_eval_start = high_resolution_clock::now();
-        vector<G1> oprf_evals;
-        oprf_eval(oprf_requests, r, oprf_evals);
-        auto oprf_eval_stop = high_resolution_clock::now();
-        all_oprf_evals_times.push_back(duration<double, std::milli>(oprf_eval_stop - oprf_eval_start).count());
-
-        // Server sends OPRF evaluations back to client
-        size_t oprf_eval_bytes = 0;
-        for (const auto& eval : oprf_evals) 
-            oprf_eval_bytes += get_element_size(eval);
-        all_oprf_eval_sent_bytes.push_back(oprf_eval_bytes);
-
-        // Client recovers H1(x)^r
-        auto oprf_recover_start = high_resolution_clock::now();
-        vector<G1> oprf_recovered;
-        oprf_recover(oprf_evals, t, oprf_recovered);
-        clients_blinded_oprf_elements.push_back(oprf_recovered);
-        auto oprf_recover_stop = high_resolution_clock::now();
-        all_oprf_recovers_times.push_back(duration<double, std::milli>(oprf_recover_stop - oprf_recover_start).count());
+    // Server sends r to each client
+    for (int i = 0; i < n_clients; i++) {
+        *server_sent_bytes += get_element_size(r);
+        *client_received_bytes += get_element_size(r);
+        *leader_client_received_bytes += get_element_size(r);
     }
-    *client_computation_time += accumulate(all_oprf_requests_times.begin(), all_oprf_requests_times.end(), 0.0) / n_clients;
-    *leader_client_computation_time += accumulate(all_oprf_evals_times.begin(), all_oprf_evals_times.end(), 0.0) / n_clients;
-    *server_intersect_time += accumulate(all_oprf_evals_times.begin(), all_oprf_evals_times.end(), 0.0);
-    *client_computation_time += accumulate(all_oprf_recovers_times.begin(), all_oprf_recovers_times.end(), 0.0) / n_clients;
-    *leader_client_computation_time += accumulate(all_oprf_recovers_times.begin(), all_oprf_recovers_times.end(), 0.0) / n_clients;
-
-    *client_sent_bytes += accumulate(all_oprf_request_sent_bytes.begin(), all_oprf_request_sent_bytes.end(), 0);
-    *leader_client_sent_bytes += accumulate(all_oprf_eval_sent_bytes.begin(), all_oprf_eval_sent_bytes.end(), 0);
-    *server_received_bytes += accumulate(all_oprf_request_sent_bytes.begin(), all_oprf_request_sent_bytes.end(), 0);
-    *server_sent_bytes += accumulate(all_oprf_eval_sent_bytes.begin(), all_oprf_eval_sent_bytes.end(), 0);
-    *client_received_bytes += accumulate(all_oprf_eval_sent_bytes.begin(), all_oprf_eval_sent_bytes.end(), 0);
-    *leader_client_sent_bytes += accumulate(all_oprf_recover_sent_bytes.begin(), all_oprf_recover_sent_bytes.end(), 0);
-    *client_sent_bytes += accumulate(all_oprf_recover_sent_bytes.begin(), all_oprf_recover_sent_bytes.end(), 0);
-    *leader_client_received_bytes += accumulate(all_oprf_recover_sent_bytes.begin(), all_oprf_recover_sent_bytes.end(), 0);
-    *server_received_bytes += accumulate(all_oprf_recover_sent_bytes.begin(), all_oprf_recover_sent_bytes.end(), 0);
 
     // Each client generates a secret, computes their S value and their GBF
     auto client_start = high_resolution_clock::now();
@@ -383,7 +306,7 @@ std::vector<long> multiparty_psi(
         S_values.push_back(S_i);
         
         // GBF
-        gbfs.push_back(compute_gbf(client_sets[i], clients_blinded_oprf_elements[i], bf_params, s_i, judge_pk));
+        gbfs.push_back(compute_gbf(client_sets[i], bf_params, r, s_i, judge_pk));
     }
     auto client_stop = high_resolution_clock::now();
     *client_computation_time = duration<double, std::milli>(client_stop - client_start).count() / n_clients;
