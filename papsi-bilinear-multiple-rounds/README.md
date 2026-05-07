@@ -8,10 +8,10 @@ sudo apt install build-essential cmake libgmp-dev libntl-dev
 ```
 
 ```
-cd papsi-bilinear-single-round/
+cd papsi-bilinear-multiple-rounds/
 mkdir build
 cd build
 cmake ..
 cmake --build . --config Release
-./papsi_bilinear_single_round
+./papsi_bilinear_multiple_rounds
 ```
